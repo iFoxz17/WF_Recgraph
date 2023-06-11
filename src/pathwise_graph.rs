@@ -7,6 +7,9 @@ use handlegraph::{
 };
 use std::collections::HashMap;
 //TODO: check path versus, only working with every path on + or -
+//Paths_nodes associa ad ogni nodo un bitvec dei paths a cui appartiene
+//nodes_is_pos mappa ogni nodo della linearizzazione nel nodo a cui apparteneva nel file gaf iniziale
+//paths_number è il numero dei path
 pub struct PathGraph {
     pub lnz: Vec<char>,
     pub nwp: BitVec,

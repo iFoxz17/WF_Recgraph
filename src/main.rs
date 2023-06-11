@@ -261,7 +261,7 @@ fn main() {
         4 => {
             let graph = pathwise_graph::read_graph_w_path(&graph_path, false);
 
-            let recgraph_mod = true;
+            let recgraph_mod = false;
 
             if recgraph_mod {
                 for (i, seq) in sequences.iter().enumerate() {
