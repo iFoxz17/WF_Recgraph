@@ -9,6 +9,7 @@ use std::thread;
 use std::sync::mpsc;
 
 use std::collections::HashSet;
+use std::hash::Hash;
 use queues::*;
 
 /// **Multiple string rapresentation** of the **graph**; <code>lnz</code> contains the linearization of 
@@ -53,48 +54,50 @@ struct WavefrontSet {
 }
 
 impl WavefrontSet {
-    fn new(
+    fn new<T>(
         min_diagonal: isize,
         max_diagonal: usize, 
         wavefront_impl: WavefrontImpl,
         diagonals_number: usize,
         max_penalty: usize
-    ) -> WavefrontSet {
+    ) -> WavefrontSet 
+    where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 
         let mut wavefront_set = WavefrontSet {
             score_wavefront: Vec::new(),
         };
 
-        wavefront_set.add_wavefront(min_diagonal, max_diagonal, wavefront_impl, diagonals_number, max_penalty);
+        wavefront_set.add_wavefront::<T>(
+            min_diagonal, max_diagonal, wavefront_impl, diagonals_number, max_penalty
+        );
         wavefront_set
     }
 
-    fn add_wavefront(
+    fn add_wavefront<T>(
         &mut self, 
         min_diagonal: isize, 
         max_diagonal: usize,
         wavefront_impl: WavefrontImpl,
         diagonals_number: usize,
         max_penalty: usize
-    ) {
-        
-        match wavefront_impl {
-            WavefrontImpl::WavefrontVec => {
-                self.score_wavefront.push(Box::new(WavefrontVec::new(min_diagonal, max_diagonal)));
-            },
-            WavefrontImpl::WavefrontHash => {
-                self.score_wavefront.push(Box::new(WavefrontHash::new(min_diagonal, max_diagonal)));
-            },
-            WavefrontImpl::WavefrontMixed(threshold) => {
-                if diagonals_number as f64 / (((max_diagonal + (-min_diagonal) as usize + 1) * max_penalty) as f64) < threshold {
-                    self.score_wavefront.push(Box::new(WavefrontHash::new(min_diagonal, max_diagonal)));
-                }
-                else {
-                    self.score_wavefront.push(Box::new(WavefrontVec::new(min_diagonal, max_diagonal)));
-                }
-            },
-
-        };
+    ) 
+    where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
+        self.score_wavefront.push(
+            match wavefront_impl {
+                WavefrontImpl::WavefrontVec => Box::new(WavefrontVec::<T>::new(min_diagonal, max_diagonal)),
+                WavefrontImpl::WavefrontHash => Box::new(WavefrontHash::<T>::new(min_diagonal, max_diagonal)),
+                WavefrontImpl::WavefrontMixed(threshold) => {
+                    if diagonals_number as f64 / 
+                    (((max_diagonal + (-min_diagonal) as usize + 1) * max_penalty) as f64) 
+                    < threshold {
+                        Box::new(WavefrontVec::<T>::new(min_diagonal, max_diagonal))
+                    }
+                    else {
+                        Box::new(WavefrontHash::<T>::new(min_diagonal, max_diagonal))
+                    }
+                },
+            }
+        )
     }
 
     fn get_wavefront(&mut self, score: usize) -> Option<&mut Box<dyn Wavefront>> {
@@ -107,7 +110,7 @@ impl WavefrontSet {
         }
     }
 
-    /// Returns the max wavefront score stored 
+    /// Returns the max wavefront score stored.
     #[inline(always)]
     fn get_max_score(&self) -> usize {
         if self.score_wavefront.len() > 0 {
@@ -123,7 +126,7 @@ impl WavefrontSet {
 /// # Fields
 /// - <code>path</code>: **path** chosen;
 /// - <code>wavefronts</code>: all the **wavefronts** of the **path**; 
-/// - <code>diagonals_queue</code>: <code>Queue</code> that maintains the diagonals to extend for every score; 
+/// - <code>diagonals_queue</code>: <code>Queue</code> that maintains the diagonals to extend for every score.
 struct PathWavefronts {
     path: usize,
     wavefronts: WavefrontSet,
@@ -132,18 +135,20 @@ struct PathWavefronts {
 
 impl PathWavefronts {
     #[inline(always)]
-    fn new(
+    fn new<T>(
         path: usize, 
         min_diagonal: isize, 
         max_diagonal: usize, 
         wavefront_impl: WavefrontImpl,
         diagonals_number: usize,
         max_penalty: usize
-    ) -> PathWavefronts {
-
+    ) -> PathWavefronts 
+    where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
         PathWavefronts {
             path,
-            wavefronts: WavefrontSet::new(min_diagonal, max_diagonal, wavefront_impl, diagonals_number, max_penalty),
+            wavefronts: WavefrontSet::new::<T>(
+                min_diagonal, max_diagonal, wavefront_impl, diagonals_number, max_penalty
+            ),
             diagonals_queue: Queue::new(),
         }
     }
@@ -154,8 +159,8 @@ impl PathWavefronts {
 pub enum AlignmentMod {
     Global,
     Semiglobal,
-    GlobalFreeStart,
-    GlobalFreeEnd,
+    LeftSemiglobal,
+    RightSemiglobal,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -232,7 +237,7 @@ impl Alignment {
 
         (graph_string, op_string, sequence_string)
     }
-
+    #[allow(unused)]
     pub fn get_path_string(&self) -> String {
         let mut path_string = String::new();
         for op in self.operations.iter() {
@@ -267,6 +272,7 @@ impl Alignment {
         }
     }
 
+    #[allow(unused)]
     pub fn get_cigar(&self) -> String {
         let mut cigar = String::new();
         let mut last_op = '\0';
@@ -328,7 +334,7 @@ fn set_base_case(
     modality: AlignmentMod
 ) {
     match modality {
-        AlignmentMod::Global | AlignmentMod::GlobalFreeEnd => {
+        AlignmentMod::Global | AlignmentMod::LeftSemiglobal => {
             path_wavefronts.wavefronts
             .get_wavefront(0)
             .unwrap()
@@ -337,7 +343,7 @@ fn set_base_case(
             path_wavefronts.diagonals_queue.add((0, 0)).unwrap();
         },
         
-        AlignmentMod::Semiglobal | AlignmentMod::GlobalFreeStart=> {
+        AlignmentMod::Semiglobal | AlignmentMod::RightSemiglobal=> {
             for j in 0..graph.paths_mapping[path_wavefronts.path].len() {
                 path_wavefronts.wavefronts
                 .get_wavefront(0)
@@ -360,7 +366,7 @@ fn check_termination(
     let mut final_diagonal = None;
 
     match modality {
-        AlignmentMod::Global | AlignmentMod::GlobalFreeStart => {
+        AlignmentMod::Global | AlignmentMod::RightSemiglobal => {
             if let Some(offset) = path_wavefronts.wavefronts
             .get_wavefront(score)
             .unwrap().
@@ -374,7 +380,7 @@ fn check_termination(
             }
         },
 
-        AlignmentMod::Semiglobal | AlignmentMod::GlobalFreeEnd => {
+        AlignmentMod::Semiglobal | AlignmentMod::LeftSemiglobal => {
             for j in 0..graph.paths_mapping[path_wavefronts.path].len() {
                 if let Some(offset) = path_wavefronts.wavefronts
                 .get_wavefront(score)
@@ -510,10 +516,12 @@ fn extend_no_threads(
         if score == penalty {
             let i = wavefront.get_diagonal_offset(k).unwrap();
             let increase = get_diagonal_match_count(sequence, graph, path_wavefronts.path, k, i);
-            wavefront.set_diagonal_offset(k, i + increase);           
+            wavefront.set_diagonal_offset(k, i + increase);
         }
+
         mem_queue.add((penalty, k)).unwrap();
     }
+
     *queue = mem_queue;
 }
 
@@ -544,7 +552,7 @@ fn extend(
     }        
 }
 
-fn expand(
+fn expand<T>(
     sequence: &[char], 
     graph: &PathStrings,
     path_wavefronts: &mut PathWavefronts,
@@ -554,7 +562,8 @@ fn expand(
     ins: usize,
     del: usize,
     wavefront_impl: WavefrontImpl
-) {
+) 
+where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 
     let max_penalty = max(m, ins, del);
 
@@ -564,7 +573,7 @@ fn expand(
     let mut next_wavefront;
 
     for _add in 1..=(score + max_penalty - path_wavefronts.wavefronts.get_max_score()) {
-        path_wavefronts.wavefronts.add_wavefront(
+        path_wavefronts.wavefronts.add_wavefront::<T>(
             -(graph.paths_mapping[path_wavefronts.path].len() as isize) + 1,
             sequence.len() - 1,
             wavefront_impl,
@@ -726,7 +735,7 @@ fn traceback(
     alignment
 }
 
-fn wf_align_to_path(
+fn wf_align_to_path<T>(
     sequence: &[char],
     graph: &PathStrings,
     path: usize,
@@ -737,11 +746,12 @@ fn wf_align_to_path(
     modality: AlignmentMod,
     parallelize_match: bool,
     maybe_max_score: &Option<usize>
-) -> Alignment {
+) -> Alignment 
+where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 
     let max_diagonal = sequence.len() - 1;
     let min_diagonal = -(graph.paths_mapping[path].len() as isize) + 1;
-    let mut path_wavefronts = PathWavefronts::new(
+    let mut path_wavefronts = PathWavefronts::new::<T>(
         path, 
         min_diagonal, 
         max_diagonal, 
@@ -773,7 +783,7 @@ fn wf_align_to_path(
             break;
         }
 
-        expand(sequence, graph, &mut path_wavefronts, &mut mem_set, d, m, ins, del, wavefront_impl);
+        expand::<T>(sequence, graph, &mut path_wavefronts, &mut mem_set, d, m, ins, del, wavefront_impl);
 
         d += 1;
     }
@@ -789,8 +799,7 @@ fn wf_align_to_path(
         del)
 }
 
-/// Runs **multiple threads WFA** to provide an **optimal alignment** between a 
-/// <code>canonical variation graph</code> and a <code>sequence</code>. 
+/// Runs **WFA** to provide an **optimal alignment** between a <code>graph</code> and a <code>sequence</code>. 
 /// # Arguments
 /// - <code>graph</code>: **multiple string** rapresentation of the **graph** to align;
 /// - <code>sequence</code>: **sequence** to align;
@@ -799,13 +808,13 @@ fn wf_align_to_path(
 /// - <code>m</code>: **mismatch penalty**;
 /// - <code>ins</code>: **insertion penalty**;
 /// - <code>del</code>: **deletion penalty**;
-/// - <code>wavefront_impl</code>: **implementation** used to store the wavefronts;
+/// - <code>wavefront_impl</code>: **implementation** to store the wavefronts;
 /// - <code>modality</code>: **alignment modality** to use;
-/// - <code>parallelize_match</code>: if <code>true</code>, every diagonal will be extended by a different 
-/// **thread**; otherwise, all the diagonals will be extended **sequentially**.
+/// - <code>parallelize_match</code>: if <code>true</code>, every diagonal will be extended by a different **thread**;
+/// otherwise, all the diagonals will be extended **sequentially**.
 ///
 /// # Return value
-/// Returns the **value** of the **alignment**; all the **alignment informations** are stored in 
+/// Returns the **value** of the **alignment**; the **sequence(s) of operations** performed are stored in 
 /// <code>optimal_alignments</code>.
 ///
 /// # Complexity
@@ -821,7 +830,7 @@ fn wf_align_to_path(
 /// The **space complexity** depends on the wavefront implementation chosen; however, for each implementation,
 /// in the **worst case** every diagonal is stored in the wavefront for **every score** lower than the 
 /// **optimal alignment value**, so the **worst case space complexity** is <code>O((n + m) d)</code>.
-pub fn wf_align(
+pub fn wf_align<T>(
     graph: &PathStrings,
     sequence: &[char],
     optimal_alignments: &mut Vec<Alignment>,
@@ -831,7 +840,8 @@ pub fn wf_align(
     wavefront_impl: WavefrontImpl,
     modality: AlignmentMod,
     parallelize_match: bool
-) -> usize {
+) -> usize 
+where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 
     let mut threads_alignments: Vec<Alignment> = Vec::with_capacity(graph.paths_number);
     let mut maybe_max_score = None;
@@ -844,7 +854,7 @@ pub fn wf_align(
             let tx_thread = tx.clone();
 
             s.spawn(move || {
-                let alignment = wf_align_to_path(
+                let alignment = wf_align_to_path::<T>(
                     sequence,
                     graph,
                     path,

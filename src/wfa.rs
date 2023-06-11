@@ -5,6 +5,8 @@ mod wf_implementation;
 /// Wavefront alignment implementation.
 mod wf_alignment;
 
+extern crate num;
+
 use crate::pathwise_graph::PathGraph;
 use crate::gaf_output::*;
 use crate::utils;
@@ -88,6 +90,31 @@ fn alignment_to_gaf_struct(sequence: &[char], path_graph: &PathGraph, alignment:
     gaf
 }
 
+fn choose_uint_size(graph: &PathGraph, sequence: &[char]) -> usize {
+
+    let max = |x, y| {if x >= y {x} else {y}};
+    let choose_usize = false;
+
+    if choose_usize {
+        0
+    }
+    else if max(graph.lnz.len(), sequence.len()) < usize::pow(2, 7) - 1 {
+        8
+    } 
+    else if max(graph.lnz.len(), sequence.len()) < usize::pow(2, 15) - 1 {
+        16
+    }
+    else if max(graph.lnz.len(), sequence.len()) < usize::pow(2, 31) - 1 {
+        32
+    }
+    else if max(graph.lnz.len(), sequence.len()) < usize::pow(2, 63) - 1 {
+        64
+    }
+    else {
+        128
+    }
+}
+
 /// Runs **multiple threads WFA** to provide a **global optimal alignment** between a 
 /// <code>canonical variation graph</code> and a <code>sequence</code>. 
 /// # Arguments
@@ -107,26 +134,27 @@ pub fn wf_pathwise_alignment_global(
 ) -> GAFStruct {
 
     let graph = path_graph_to_path_strings(path_graph);
-
     let mut optimal_alignments = Vec::new();
-
     let wf_implementation = WavefrontImpl::WavefrontVec;
     //let wf_implementation = WavefrontImpl::WavefrontHash;
     //let wf_implementation = WavefrontImpl::WavefrontMixed(0.7);
-
     let parallelize_match = false;
+    let uint_type = choose_uint_size(path_graph, sequence);
 
-    let _d = wf_align(
-        &graph, 
-        sequence, 
-        &mut optimal_alignments, 
-        m, 
-        ins, 
-        del, 
-        wf_implementation, 
-        AlignmentMod::Global, 
-        parallelize_match
-    );
+    let _d = match uint_type {
+        8 => wf_align::<u8>(&graph, &sequence, &mut optimal_alignments, m, ins, del, 
+            wf_implementation, AlignmentMod::Global, parallelize_match),
+        16 => wf_align::<u16>(&graph, &sequence, &mut optimal_alignments, m, ins, del, 
+            wf_implementation, AlignmentMod::Global, parallelize_match),
+        32 => wf_align::<u32>(&graph, &sequence, &mut optimal_alignments, m, ins, del, 
+            wf_implementation, AlignmentMod::Global, parallelize_match),
+        64 => wf_align::<u64>(&graph, &sequence, &mut optimal_alignments, m, ins, del, 
+            wf_implementation, AlignmentMod::Global, parallelize_match),
+        128 => wf_align::<u128>(&graph, &sequence, &mut optimal_alignments, m, ins, del, 
+            wf_implementation, AlignmentMod::Global, parallelize_match), 
+        _ => wf_align::<usize>(&graph, &sequence, &mut optimal_alignments, m, ins, del, 
+            wf_implementation, AlignmentMod::Global, parallelize_match),
+    };
 
     alignment_to_gaf_struct(sequence, path_graph, &optimal_alignments[0])
 }
@@ -150,26 +178,27 @@ pub fn wf_pathwise_alignment_semiglobal(
 ) -> GAFStruct {
 
     let graph = path_graph_to_path_strings(path_graph);
-
     let mut optimal_alignments = Vec::new();
-
     //let wf_implementation = WavefrontImpl::WavefrontVec;
     //let wf_implementation = WavefrontImpl::WavefrontHash;
     let wf_implementation = WavefrontImpl::WavefrontMixed(0.3);
-
     let parallelize_match = false;
+    let uint_type = choose_uint_size(path_graph, sequence);
 
-    let _d = wf_align(
-        &graph, 
-        sequence, 
-        &mut optimal_alignments, 
-        m, 
-        ins, 
-        del, 
-        wf_implementation, 
-        AlignmentMod::Semiglobal, 
-        parallelize_match
-    );
+    let _d = match uint_type {
+        8 => wf_align::<u8>(&graph, &sequence, &mut optimal_alignments, m, ins, del, 
+            wf_implementation, AlignmentMod::Semiglobal, parallelize_match),
+        16 => wf_align::<u16>(&graph, &sequence, &mut optimal_alignments, m, ins, del, 
+            wf_implementation, AlignmentMod::Semiglobal, parallelize_match),
+        32 => wf_align::<u32>(&graph, &sequence, &mut optimal_alignments, m, ins, del, 
+            wf_implementation, AlignmentMod::Semiglobal, parallelize_match),
+        64 => wf_align::<u64>(&graph, &sequence, &mut optimal_alignments, m, ins, del, 
+            wf_implementation, AlignmentMod::Semiglobal, parallelize_match),
+        128 => wf_align::<u128>(&graph, &sequence, &mut optimal_alignments, m, ins, del, 
+            wf_implementation, AlignmentMod::Semiglobal, parallelize_match), 
+        _ => wf_align::<usize>(&graph, &sequence, &mut optimal_alignments, m, ins, del, 
+            wf_implementation, AlignmentMod::Semiglobal, parallelize_match),
+    };
 
     alignment_to_gaf_struct(sequence, path_graph, &optimal_alignments[0])
 }

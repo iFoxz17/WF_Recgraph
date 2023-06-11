@@ -23,3 +23,15 @@ pub trait Wavefront {
     /// Returns <code>true</code> if <code>diagonal</code> exists; <code>false</code> otherwise.
     fn exist(&self, diagonal: isize) -> bool;
 }
+
+#[inline(always)]
+pub fn as_usize<T>(value: T) -> usize 
+where T: num::NumCast {
+    num::NumCast::from::<T>(value).unwrap()
+}
+
+#[inline(always)]
+pub fn from_usize<T>(value: usize) -> T 
+where T: num::NumCast {
+    num::NumCast::from::<usize>(value).unwrap()
+}

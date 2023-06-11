@@ -1,30 +1,32 @@
 use crate::wfa::wavefront::*;
 use std::collections::HashMap;
+use std::hash::Hash;
 
 /// Wavefront implementation based on an **Hashmap**; efficient when the number of diagonal actually
 /// computed is much less than all the hypotheticals diagonals.
-pub struct WavefrontHash {
-    min_diagonal: usize,
-    max_diagonal: usize,
-    offsets: HashMap<usize, usize>,
-    pred_diagonal: HashMap<usize, usize>,
+pub struct WavefrontHash<T> {
+    min_diagonal: T,
+    max_diagonal: T,
+    offsets: HashMap<T, T>,
+    pred_diagonal: HashMap<T, T>,
 }
 
-impl WavefrontHash {
+impl<T> WavefrontHash<T>
+where T: num::NumCast + Copy {
     pub fn new(min_diagonal: isize, max_diagonal: usize) -> Self {
         
-        let new_min_diagonal : usize;
+        let new_min_diagonal : T;
 
         if min_diagonal < 0 {
-            new_min_diagonal = (-min_diagonal) as usize;
+            new_min_diagonal = from_usize::<T>((-min_diagonal) as usize);
         } 
         else {
-            new_min_diagonal = min_diagonal as usize
+            new_min_diagonal = from_usize::<T>(min_diagonal as usize)
         }
                
         WavefrontHash {
             min_diagonal: new_min_diagonal, 
-            max_diagonal,
+            max_diagonal: from_usize::<T>(max_diagonal),
             offsets: HashMap::new(),
             pred_diagonal: HashMap::new(),
         }
@@ -32,37 +34,38 @@ impl WavefrontHash {
 
     #[inline(always)]
     fn get_actual_diagonal(&self, diagonal: isize) -> Option<usize> {
-        let min_diagonal = -(self.min_diagonal as isize);
+        let min_diagonal = - (as_usize(self.min_diagonal) as isize);
 
-        if diagonal < min_diagonal || diagonal > self.max_diagonal as isize {
+        if diagonal < min_diagonal || diagonal > as_usize(self.max_diagonal) as isize {
             return None;
         }
 
-        Some((diagonal + (self.min_diagonal as isize)) as usize)
+        Some((diagonal - min_diagonal) as usize)
     }
 }
 
-impl Wavefront for WavefrontHash {
+impl<T> Wavefront for WavefrontHash<T> 
+where T: num::NumCast + Copy + std::cmp::Eq + Hash + Copy {
 
     #[inline(always)]
     fn get_min_diagonal(&self) -> isize {
-        -(self.min_diagonal as isize)
+        - (as_usize(self.min_diagonal) as isize)
     }
 
     #[inline(always)]
     fn get_max_diagonal(&self) -> isize {
-        self.max_diagonal as isize
+        as_usize(self.max_diagonal) as isize
     }
 
     fn get_diagonal_offset(&self, diagonal: isize) -> Option<usize> {
         if let Some(current_diagonal) = self.get_actual_diagonal(diagonal) {
-            let offset = self.offsets.get(&current_diagonal);
+            let offset = self.offsets.get(&from_usize::<T>(current_diagonal));
 
             if offset == None {
                 return None;
             }
 
-            Some(*(offset.unwrap()))
+            Some(as_usize(*(offset.unwrap())))
         }
         else {
             None
@@ -73,7 +76,10 @@ impl Wavefront for WavefrontHash {
     fn set_diagonal_offset(&mut self, diagonal: isize, offset: usize) -> bool {
 
         if let Some(current_diagonal) = self.get_actual_diagonal(diagonal) {
-            self.offsets.insert(current_diagonal, offset);
+            self.offsets.insert(
+                from_usize::<T>(current_diagonal), 
+                from_usize::<T>(offset)
+            );
             true
         }
         else {
@@ -84,7 +90,10 @@ impl Wavefront for WavefrontHash {
     fn set_pred_diagonal(&mut self, diagonal: isize, predecessor_diagonal: isize) -> bool {
         if let Some(current_diagonal) = self.get_actual_diagonal(diagonal) {
             if let Some(current_pred_diagonal) = self.get_actual_diagonal(predecessor_diagonal) {
-                self.pred_diagonal.insert(current_diagonal, current_pred_diagonal);
+                self.pred_diagonal.insert(
+                    from_usize::<T>(current_diagonal), 
+                    from_usize::<T>(current_pred_diagonal)
+                );
                 true
             }
             else {
@@ -98,13 +107,13 @@ impl Wavefront for WavefrontHash {
     
     fn get_pred_diagonal(&self, diagonal: isize) -> Option<isize> {
         if let Some(current_diagonal) = self.get_actual_diagonal(diagonal) {
-            let pred_diagonal = self.pred_diagonal.get(&current_diagonal);
+            let pred_diagonal = self.pred_diagonal.get(&from_usize::<T>(current_diagonal));
 
             if pred_diagonal == None {
                 return None;
             }
 
-            Some(*(pred_diagonal.unwrap()) as isize - self.min_diagonal as isize)
+            Some(as_usize(*pred_diagonal.unwrap()) as isize - as_usize(self.min_diagonal) as isize)
         }
         else {
             None
@@ -113,7 +122,7 @@ impl Wavefront for WavefrontHash {
 
     fn exist(&self, diagonal: isize) -> bool {
         if let Some(current_diagonal) = self.get_actual_diagonal(diagonal) {
-            self.offsets.contains_key(&current_diagonal)
+            self.offsets.contains_key(&from_usize::<T>(current_diagonal))
         }
         else {
             false
