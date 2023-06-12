@@ -272,7 +272,7 @@ fn main() {
             }
             else {
                 for (i, seq) in sequences.iter().enumerate() {
-                    let mut gaf = wfa::wf_pathwise_alignment_global(seq, &graph, 1, 3, 2);
+                    let mut gaf = wfa::wf_pathwise_alignment_global(seq, &graph, 2, 3, 3);
                     gaf.query_name = seq_names[i].clone();
                     utils::write_gaf(&gaf.to_string(), i);
                 }

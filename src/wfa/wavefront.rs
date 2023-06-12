@@ -35,3 +35,15 @@ pub fn from_usize<T>(value: usize) -> T
 where T: num::NumCast {
     num::NumCast::from::<usize>(value).unwrap()
 }
+
+#[inline(always)]
+pub fn as_isize<T>(value: T) -> isize 
+where T: num::NumCast {
+    num::NumCast::from::<T>(value).unwrap()
+}
+
+#[inline(always)]
+pub fn from_isize<T>(value: isize) -> T 
+where T: num::NumCast {
+    num::NumCast::from::<isize>(value).unwrap()
+}

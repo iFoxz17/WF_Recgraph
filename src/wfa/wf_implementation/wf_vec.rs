@@ -44,13 +44,13 @@ where T: num::NumCast + Copy {
 
     #[inline(always)]
     fn get_actual_diagonal(&self, diagonal: isize) -> Option<usize> {
-        let min_diagonal = -(as_usize(self.min_diagonal) as isize);
+        let min_diagonal = -as_isize(self.min_diagonal);
 
-        if diagonal < min_diagonal || diagonal > as_usize(self.max_diagonal) as isize {
+        if diagonal < min_diagonal || diagonal > as_isize(self.max_diagonal) {
             return None;
         }
 
-        Some((diagonal + as_usize(self.min_diagonal) as isize) as usize)
+        Some((diagonal + as_isize(self.min_diagonal)) as usize)
     }
 }
 
@@ -59,12 +59,12 @@ where T: num::NumCast + Copy {
 
     #[inline(always)]
     fn get_min_diagonal(&self) -> isize {
-        - (as_usize(self.min_diagonal) as isize)
+        -as_isize(self.min_diagonal)
     }
 
     #[inline(always)]
     fn get_max_diagonal(&self) -> isize {
-        as_usize(self.max_diagonal) as isize
+        as_isize(self.max_diagonal)
     }
 
     fn get_diagonal_offset(&self, diagonal: isize) -> Option<usize> {
@@ -111,7 +111,7 @@ where T: num::NumCast + Copy {
 
     fn get_pred_diagonal(&self, diagonal: isize) -> Option<isize> {
         if let Some(current_diagonal) = self.get_actual_diagonal(diagonal) {
-            Some(as_usize(self.pred_diagonal[current_diagonal]) as isize - as_usize(self.min_diagonal) as isize)
+            Some(as_isize(self.pred_diagonal[current_diagonal]) - as_isize(self.min_diagonal))
         }
         else {
             None
