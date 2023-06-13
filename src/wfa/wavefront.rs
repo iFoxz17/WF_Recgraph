@@ -42,6 +42,7 @@ where T: num::NumCast {
     num::NumCast::from::<T>(value).unwrap()
 }
 
+#[allow(unused)]
 #[inline(always)]
 pub fn from_isize<T>(value: isize) -> T 
 where T: num::NumCast {

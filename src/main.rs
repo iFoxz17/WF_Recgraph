@@ -272,6 +272,8 @@ fn main() {
             }
             else {
                 for (i, seq) in sequences.iter().enumerate() {
+                    eprintln!("Processing {}/{} ({:.2} %)", i+1, sequences.len(),
+                            (i + 1) as f64 / sequences.len() as f64 * 100.0);
                     let mut gaf = wfa::wf_pathwise_alignment_global(seq, &graph, 2, 3, 3);
                     gaf.query_name = seq_names[i].clone();
                     utils::write_gaf(&gaf.to_string(), i);
@@ -293,6 +295,8 @@ fn main() {
             }
             else {
                 for (i, seq) in sequences.iter().enumerate() {
+                    eprintln!("Processing {}/{} ({:.2} %)", i+1, sequences.len(),
+                            (i + 1) as f64 / sequences.len() as f64 * 100.0);
                     let mut gaf = wfa::wf_pathwise_alignment_semiglobal(seq, &graph, 1, 3, 2);
                     gaf.query_name = seq_names[i].clone();
                     utils::write_gaf(&gaf.to_string(), i);
