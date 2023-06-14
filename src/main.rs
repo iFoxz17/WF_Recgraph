@@ -261,22 +261,50 @@ fn main() {
         4 => {
             let graph = pathwise_graph::read_graph_w_path(&graph_path, false);
 
-            let recgraph_mod = false;
+            let recgraph_mod = true;
+            let print_status = true;
+            let mut part_elapsed = 0;
 
             if recgraph_mod {
                 for (i, seq) in sequences.iter().enumerate() {
+                    if print_status {
+                        part_elapsed = now.elapsed().unwrap().as_millis(); 
+                        eprint!("Processing {}/{} ({:.1}%) -> ", 
+                                i + 1, sequences.len(),
+                                (i + 1) as f64 / sequences.len() as f64 * 100.0 
+                        );
+                    }
                     let mut gaf = pathwise_alignment::exec(seq, &graph, &score_matrix);
                     gaf.query_name = seq_names[i].clone();
                     utils::write_gaf(&gaf.to_string(), i);
+                    if print_status {
+                        eprintln!("Done: {:.1} s from start, expecting {:.1} s, {:.1} s remaining", 
+                                part_elapsed as f64 / 1000.0,
+                                part_elapsed as f64 / 1000.0 / (i + 1) as f64 * sequences.len() as f64,
+                                part_elapsed as f64 / 1000.0 / (i + 1) as f64 * (sequences.len() - i - 1) as f64 
+                        );
+                    }
                 }
             }
             else {
                 for (i, seq) in sequences.iter().enumerate() {
-                    eprintln!("Processing {}/{} ({:.2} %)", i+1, sequences.len(),
-                            (i + 1) as f64 / sequences.len() as f64 * 100.0);
+                    if print_status {
+                        part_elapsed = now.elapsed().unwrap().as_millis(); 
+                        eprint!("Processing {}/{} ({:.1}%) -> ", 
+                                i + 1, sequences.len(),
+                                (i + 1) as f64 / sequences.len() as f64 * 100.0 
+                        );
+                    }
                     let mut gaf = wfa::wf_pathwise_alignment_global(seq, &graph, 2, 3, 3);
                     gaf.query_name = seq_names[i].clone();
                     utils::write_gaf(&gaf.to_string(), i);
+                    if print_status {
+                        eprintln!("Done: {:.1} s from start, expecting {:.1} s, {:.1} s remaining", 
+                                part_elapsed as f64 / 1000.0,
+                                part_elapsed as f64 / 1000.0 / (i + 1) as f64 * sequences.len() as f64,
+                                part_elapsed as f64 / 1000.0 / (i + 1) as f64 * (sequences.len() - i - 1) as f64 
+                        );
+                    }
                 }
             }
             
@@ -285,21 +313,49 @@ fn main() {
             let graph = pathwise_graph::read_graph_w_path(&graph_path, false);
 
             let recgraph_mod = false;
+            let print_status = true;
+            let mut part_elapsed = 0;
 
             if recgraph_mod {
                 for (i, seq) in sequences.iter().enumerate() {
+                    if print_status {
+                        part_elapsed = now.elapsed().unwrap().as_millis(); 
+                        eprint!("Processing {}/{} ({:.1}%) -> ", 
+                                i + 1, sequences.len(),
+                                (i + 1) as f64 / sequences.len() as f64 * 100.0 
+                        );
+                    }
                     let mut gaf = pathwise_alignment_semiglobal::exec(seq, &graph, &score_matrix);
                     gaf.query_name = seq_names[i].clone();
                     utils::write_gaf(&gaf.to_string(), i);
+                    if print_status {
+                        eprintln!("Done: {:.1} s from start, expecting {:.1} s, {:.1} s remaining", 
+                                part_elapsed as f64 / 1000.0,
+                                part_elapsed as f64 / 1000.0 / (i + 1) as f64 * sequences.len() as f64,
+                                part_elapsed as f64 / 1000.0 / (i + 1) as f64 * (sequences.len() - i - 1) as f64 
+                        );
+                    }
                 }
             }
             else {
                 for (i, seq) in sequences.iter().enumerate() {
-                    eprintln!("Processing {}/{} ({:.2} %)", i+1, sequences.len(),
-                            (i + 1) as f64 / sequences.len() as f64 * 100.0);
+                    if print_status {
+                        part_elapsed = now.elapsed().unwrap().as_millis(); 
+                        eprint!("Processing {}/{} ({:.1}%) -> ", 
+                                i + 1, sequences.len(),
+                                (i + 1) as f64 / sequences.len() as f64 * 100.0 
+                        );
+                    }
                     let mut gaf = wfa::wf_pathwise_alignment_semiglobal(seq, &graph, 1, 3, 2);
                     gaf.query_name = seq_names[i].clone();
                     utils::write_gaf(&gaf.to_string(), i);
+                    if print_status {
+                        eprintln!("Done: {:.1} s from start, expecting {:.1} s, {:.1} s remaining", 
+                                part_elapsed as f64 / 1000.0,
+                                part_elapsed as f64 / 1000.0 / (i + 1) as f64 * sequences.len() as f64,
+                                part_elapsed as f64 / 1000.0 / (i + 1) as f64 * (sequences.len() - i - 1) as f64 
+                        );
+                    }
                 }
             }
         }
