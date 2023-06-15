@@ -45,6 +45,16 @@ impl PathStrings {
     fn get_path_node_label(&self, path: usize, v: usize) -> char { 
         self.lnz[self.get_path_node_abs_mapping(path, v)]
     }
+
+    #[inline(always)]
+    pub fn get_min_diagonal(&self, path: usize) -> isize {
+        -(self.paths_mapping[path].len() as isize) + 1
+    } 
+
+    #[inline(always)]
+    pub fn get_path_length(&self, path: usize) -> usize {
+        self.paths_mapping[path].len()
+    } 
 }
 
 /// Struct which stores a **set of wavefront** (all the **wavefronts** of scores within the range 
@@ -127,7 +137,7 @@ impl WavefrontSet {
 /// - <code>path</code>: **path** chosen;
 /// - <code>wavefronts</code>: all the **wavefronts** of the **path**; 
 /// - <code>diagonals_queue</code>: <code>Queue</code> that maintains the diagonals to extend for every score.
-struct PathWavefronts {
+pub struct PathWavefronts {
     path: usize,
     wavefronts: WavefrontSet,
     diagonals_queue: Queue<(usize, isize)>,
@@ -159,8 +169,8 @@ impl PathWavefronts {
 pub enum AlignmentMod {
     Global,
     Semiglobal,
-    LeftSemiglobal,
-    RightSemiglobal,
+    StartFreeGlobal,
+    EndFreeGlobal,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -180,6 +190,7 @@ pub enum AlignmentOperation {
 /// - <code>path_end</code>: **last node** actually **aligned** of the **path**; 
 /// - <code>score</code>: **score** of the alignment; 
 /// - <code>operations</code>: <code>Vec</code> of the **alignemnt operations performed**.
+/// - <code>diagonals_pruned</code>: number of **diagonals pruned** by the algorithm.
 pub struct Alignment {
     pub path: usize,
     pub path_nodes: Vec<usize>,
@@ -188,11 +199,13 @@ pub struct Alignment {
     pub path_end: usize,
     pub score: usize,
     pub operations: Vec<AlignmentOperation>,
+    pub diagonals_pruned: usize
 } 
 
 impl Alignment {
     #[inline(always)]
-    pub fn new(path: usize, path_length: usize, path_start: usize, path_end: usize, score: usize) -> Alignment {
+    pub fn new(path: usize, path_length: usize, path_start: usize, 
+        path_end: usize, score: usize, diagonals_pruned: usize) -> Alignment {
         Alignment {
             path,
             path_nodes: Vec::with_capacity(path_length),
@@ -201,6 +214,7 @@ impl Alignment {
             path_end,
             score,
             operations: Vec::new(),
+            diagonals_pruned,
         }
     }
 
@@ -237,6 +251,7 @@ impl Alignment {
 
         (graph_string, op_string, sequence_string)
     }
+
     #[allow(unused)]
     pub fn get_path_string(&self) -> String {
         let mut path_string = String::new();
@@ -334,7 +349,7 @@ fn set_base_case(
     modality: AlignmentMod
 ) {
     match modality {
-        AlignmentMod::Global | AlignmentMod::LeftSemiglobal => {
+        AlignmentMod::Global | AlignmentMod::EndFreeGlobal => {
             path_wavefronts.wavefronts
             .get_wavefront(0)
             .unwrap()
@@ -343,7 +358,7 @@ fn set_base_case(
             path_wavefronts.diagonals_queue.add((0, 0)).unwrap();
         },
         
-        AlignmentMod::Semiglobal | AlignmentMod::RightSemiglobal=> {
+        AlignmentMod::Semiglobal | AlignmentMod::StartFreeGlobal=> {
             for j in 0..graph.paths_mapping[path_wavefronts.path].len() {
                 path_wavefronts.wavefronts
                 .get_wavefront(0)
@@ -366,7 +381,7 @@ fn check_termination(
     let mut final_diagonal = None;
 
     match modality {
-        AlignmentMod::Global | AlignmentMod::RightSemiglobal => {
+        AlignmentMod::Global | AlignmentMod::StartFreeGlobal => {
             if let Some(offset) = path_wavefronts.wavefronts
             .get_wavefront(score)
             .unwrap().
@@ -380,7 +395,7 @@ fn check_termination(
             }
         },
 
-        AlignmentMod::Semiglobal | AlignmentMod::LeftSemiglobal => {
+        AlignmentMod::Semiglobal | AlignmentMod::EndFreeGlobal => {
             for j in 0..graph.paths_mapping[path_wavefronts.path].len() {
                 if let Some(offset) = path_wavefronts.wavefronts
                 .get_wavefront(score)
@@ -574,7 +589,7 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 
     for _add in 1..=(score + max_penalty - path_wavefronts.wavefronts.get_max_score()) {
         path_wavefronts.wavefronts.add_wavefront::<T>(
-            -(graph.paths_mapping[path_wavefronts.path].len() as isize) + 1,
+            graph.get_min_diagonal(path_wavefronts.path),
             sequence.len() - 1,
             wavefront_impl,
             (*queue).size(),
@@ -651,7 +666,8 @@ fn traceback(
     alignment_penalty: usize,
     m: usize,
     ins: usize,
-    del: usize
+    del: usize,
+    diagonals_pruned: usize
 ) -> Alignment {
 
     let mut i = sequence.len() - 1;
@@ -664,7 +680,9 @@ fn traceback(
         graph.paths_mapping[path_wavefronts.path].len(),
         0,
         graph.get_path_node_abs_mapping(path_wavefronts.path, v),
-        alignment_penalty);
+        alignment_penalty,
+        diagonals_pruned
+    );
 
     let mut operations = Vec::with_capacity(graph.paths_mapping[path_wavefronts.path].len());
     let mut path_nodes = Vec::with_capacity(graph.paths_mapping[path_wavefronts.path].len());
@@ -735,6 +753,120 @@ fn traceback(
     alignment
 }
 
+fn prune_semiglobal(
+    path_wavefronts: &mut PathWavefronts,
+    score: usize,
+    max_delta_allowed: usize
+) -> usize {
+    let mut max_offset = 0;
+    let mut diagonals_pruned = 0;
+
+    let queue = &mut path_wavefronts.diagonals_queue;
+    let mut mem_queue: Queue<(usize, isize)> = Queue::new();
+    let mut tmp_queue: Queue<isize> = Queue::new();
+
+    let wavefront = path_wavefronts.wavefronts.get_wavefront(score).unwrap();
+
+    while (*queue).size() > 0 {
+        let (penalty, k) = queue.remove().unwrap();
+        
+        if penalty == score {
+            let i = wavefront.get_diagonal_offset(k).unwrap();
+ 
+            if i > max_offset {
+                max_offset = i;
+            }
+            
+            tmp_queue.add(k).unwrap();
+        }
+        else {
+            mem_queue.add((penalty, k)).unwrap();
+        }
+    }
+
+    while tmp_queue.size() > 0 {
+        let k = tmp_queue.remove().unwrap();
+        let i = wavefront.get_diagonal_offset(k).unwrap();
+
+        if max_offset - i <= max_delta_allowed {
+            mem_queue.add((score, k)).unwrap();
+        }
+        else {
+            diagonals_pruned += 1;
+        } 
+    }
+
+    *queue = mem_queue;
+    diagonals_pruned
+}
+
+fn prune_global( 
+    graph: &PathStrings,
+    path_wavefronts: &mut PathWavefronts,
+    score: usize,
+    max_delta_allowed: isize
+) -> usize {
+    let mut max_offset = 0;
+    let mut diagonals_pruned = 0;
+    let path_length = graph.get_path_length(path_wavefronts.path) as isize;
+
+    let queue = &mut path_wavefronts.diagonals_queue;
+    let mut mem_queue: Queue<(usize, isize)> = Queue::new();
+    let mut tmp_queue: Queue<isize> = Queue::new();
+
+    let wavefront = path_wavefronts.wavefronts.get_wavefront(score).unwrap();
+
+    while (*queue).size() > 0 {
+        let (penalty, k) = queue.remove().unwrap();
+        
+        if penalty == score {
+            let i = wavefront.get_diagonal_offset(k).unwrap() as isize;
+            let v = i as isize - k;
+ 
+            if i - path_length + v > max_offset {
+                max_offset = i - path_length + v;
+            }
+            
+            tmp_queue.add(k).unwrap();
+        }
+        else {
+            mem_queue.add((penalty, k)).unwrap();
+        }
+    }
+
+    while tmp_queue.size() > 0 {
+        let k = tmp_queue.remove().unwrap();
+        let i = wavefront.get_diagonal_offset(k).unwrap() as isize;
+        let v = i as isize - k;
+
+        if max_offset - (i - path_length + v) <= max_delta_allowed {
+            mem_queue.add((score, k)).unwrap();
+        }
+        else {
+            diagonals_pruned += 1;
+        } 
+    }
+
+    *queue = mem_queue;
+    diagonals_pruned
+}
+
+#[inline]
+fn prune( 
+    graph: &PathStrings,
+    path_wavefronts: &mut PathWavefronts,
+    score: usize,
+    align_mode: AlignmentMod,
+    max_delta_allowed: usize
+) -> usize {
+    match align_mode {
+        AlignmentMod::Semiglobal | AlignmentMod::EndFreeGlobal => 
+            prune_semiglobal(path_wavefronts, score, max_delta_allowed),
+        AlignmentMod::Global | AlignmentMod::StartFreeGlobal => 
+            prune_global(graph, path_wavefronts, score, max_delta_allowed as isize),
+    }
+}
+
 fn wf_align_to_path<T>(
     sequence: &[char],
     graph: &PathStrings,
@@ -745,24 +877,27 @@ fn wf_align_to_path<T>(
     wavefront_impl: WavefrontImpl,
     modality: AlignmentMod,
     parallelize_match: bool,
+    max_delta_allowed: usize,
+    prune_condition: fn(&PathStrings, &[char], usize, usize, usize, usize) -> bool,
     maybe_max_score: &Option<usize>
 ) -> Alignment 
 where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 
-    let max_diagonal = sequence.len() - 1;
-    let min_diagonal = -(graph.paths_mapping[path].len() as isize) + 1;
     let mut path_wavefronts = PathWavefronts::new::<T>(
         path, 
-        min_diagonal, 
-        max_diagonal, 
+        graph.get_min_diagonal(path), 
+        sequence.len() - 1, 
         wavefront_impl, 
         0, 
         max(m, ins, del)
     );
 
+    let max_penalty = max(m, ins, del);
+
     let mut mem_set: HashSet<(usize, isize)> = HashSet::new();
 
     let final_diagonal : isize;
+    let mut diagonals_pruned = 0;
 
     set_base_case(graph, &mut path_wavefronts, modality);
 
@@ -774,7 +909,7 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
         
         if let Some(max_score) = *maybe_max_score {
             if d > max_score {
-                return Alignment::new(path, 0, 0, 0, d);
+                return Alignment::new(path, 0, 0, 0, d, 0);
             }
         }
 
@@ -783,6 +918,10 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
             break;
         }
 
+        if prune_condition(graph, sequence, path, path_wavefronts.diagonals_queue.size(), max_penalty, d) {
+            diagonals_pruned += prune(graph, &mut path_wavefronts, d, modality, max_delta_allowed);
+        }
+        
         expand::<T>(sequence, graph, &mut path_wavefronts, &mut mem_set, d, m, ins, del, wavefront_impl);
 
         d += 1;
@@ -796,7 +935,9 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
         d,
         m,
         ins,
-        del)
+        del,
+        diagonals_pruned
+    )
 }
 
 /// Runs **WFA** to provide an **optimal alignment** between a <code>graph</code> and a <code>sequence</code>. 
@@ -839,7 +980,9 @@ pub fn wf_align<T>(
     del: usize,
     wavefront_impl: WavefrontImpl,
     modality: AlignmentMod,
-    parallelize_match: bool
+    parallelize_match: bool,
+    max_delta_allowed: usize,
+    prune_condition: fn(&PathStrings, &[char], usize, usize, usize, usize) -> bool
 ) -> usize 
 where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 
@@ -864,6 +1007,8 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
                     wavefront_impl,
                     modality,
                     parallelize_match,
+                    max_delta_allowed,
+                    prune_condition,
                     &maybe_max_score
                 );
                 tx_thread.send(alignment).unwrap();
