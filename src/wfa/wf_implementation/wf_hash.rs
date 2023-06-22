@@ -128,4 +128,14 @@ where T: num::NumCast + Copy + std::cmp::Eq + Hash + Copy {
             false
         }
     }
+
+    fn remove_diagonal(&mut self, diagonal: isize) -> bool {
+        if let Some(current_diagonal) = self.get_actual_diagonal(diagonal) {
+            self.offsets.remove(&from_usize::<T>(current_diagonal));
+            true
+        }
+        else {
+            false
+        }
+    }
 }

@@ -126,4 +126,16 @@ where T: num::NumCast + Copy {
             false
         }
     }
+
+    fn remove_diagonal(&mut self, diagonal: isize) -> bool {
+        if let Some(current_diagonal) = self.get_actual_diagonal(diagonal) {
+            self.offsets[current_diagonal] = from_usize::<T>(0);
+            self.exists.set(current_diagonal, false);
+            self.pred_diagonal[current_diagonal] = from_usize::<T>(0);
+            true
+        }
+        else {
+            false
+        }
+    }
 }

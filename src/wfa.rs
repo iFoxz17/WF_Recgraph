@@ -87,8 +87,6 @@ fn alignment_to_gaf_struct(sequence: &[char], path_graph: &PathGraph, alignment:
         comments,
     );
 
-    eprintln!("Diagonals pruned: {}", alignment.diagonals_pruned);
-
     gaf
 }
 
@@ -117,6 +115,7 @@ fn choose_uint_size(graph: &PathGraph, sequence: &[char]) -> usize {
     }
 }
 
+#[inline]
 fn choose_max_delta_allowed(_graph: &PathStrings, sequence: &[char], modality: AlignmentMod) -> usize {
     match modality {
         AlignmentMod::Global => sequence.len() / 2,
@@ -126,7 +125,8 @@ fn choose_max_delta_allowed(_graph: &PathStrings, sequence: &[char], modality: A
     }
 }
 
-#[inline]
+#[allow(unused)]
+#[inline(always)]
 fn prune_condition_semiglobal(
     graph: &PathStrings, 
     sequence: &[char], 
@@ -136,12 +136,16 @@ fn prune_condition_semiglobal(
     d: usize
 ) -> bool {
 
+    /*
     d >= 10 && actual_diagonals_number as f64 / 
                 ((sequence.len() - 1 + (-graph.get_min_diagonal(path)) as usize) * max_penalty) as f64 >
                 0.6  
+    */
+    false
 }
 
-#[inline]
+#[allow(unused)]
+#[inline(always)]
 fn prune_condition_global(
     graph: &PathStrings, 
     sequence: &[char], 
@@ -151,15 +155,12 @@ fn prune_condition_global(
     d: usize
 ) -> bool {
 
-    let diagonal_threshold = 0.5;
-    
-    let min_diagonal = graph.get_min_diagonal(path);
-    let max_diagonal = sequence.len() - 1;
-
+    /*
     d >= 10 && actual_diagonals_number as f64 / 
-                ((max_diagonal + (-min_diagonal) as usize) * max_penalty) as f64 >
-                diagonal_threshold as f64;
-                
+                ((sequence.len() - 1 + (-graph.get_min_diagonal(path)) as usize) * max_penalty) as f64 >
+                0.3;
+    */
+
     false
 }
 
@@ -190,25 +191,27 @@ pub fn wf_pathwise_alignment_global(
     let uint_type = choose_uint_size(path_graph, sequence);
     let max_delta_allowed = choose_max_delta_allowed(&graph, sequence, AlignmentMod::Global);
 
+    let find_all_alignments = false;
+
     let _d = match uint_type {
         8 => wf_align::<u8>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Global, parallelize_match, 
-            max_delta_allowed, prune_condition_global),
+            max_delta_allowed, prune_condition_global, find_all_alignments),
         16 => wf_align::<u16>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Global, parallelize_match, 
-            max_delta_allowed, prune_condition_global),
+            max_delta_allowed, prune_condition_global, find_all_alignments),
         32 => wf_align::<u32>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Global, parallelize_match, 
-            max_delta_allowed, prune_condition_global),
+            max_delta_allowed, prune_condition_global, find_all_alignments),
         64 => wf_align::<u64>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Global, parallelize_match, 
-            max_delta_allowed, prune_condition_global),
+            max_delta_allowed, prune_condition_global, find_all_alignments),
         128 => wf_align::<u128>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Global, parallelize_match, 
-            max_delta_allowed, prune_condition_global), 
+            max_delta_allowed, prune_condition_global, find_all_alignments), 
         _ => wf_align::<usize>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Global, parallelize_match, 
-            max_delta_allowed, prune_condition_global),
+            max_delta_allowed, prune_condition_global, find_all_alignments),
     };
 
     alignment_to_gaf_struct(sequence, path_graph, &optimal_alignments[0])
@@ -242,25 +245,27 @@ pub fn wf_pathwise_alignment_semiglobal(
 
     let max_delta_allowed = choose_max_delta_allowed(&graph, sequence, AlignmentMod::Semiglobal);
 
+    let find_all_alignments = false;
+
     let _d = match uint_type {
         8 => wf_align::<u8>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Semiglobal, parallelize_match, 
-            max_delta_allowed, prune_condition_semiglobal),
+            max_delta_allowed, prune_condition_semiglobal, find_all_alignments),
         16 => wf_align::<u16>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Semiglobal, parallelize_match, 
-            max_delta_allowed, prune_condition_semiglobal),
+            max_delta_allowed, prune_condition_semiglobal, find_all_alignments),
         32 => wf_align::<u32>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Semiglobal, parallelize_match,
-            max_delta_allowed, prune_condition_semiglobal),
+            max_delta_allowed, prune_condition_semiglobal, find_all_alignments),
         64 => wf_align::<u64>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Semiglobal, parallelize_match,
-            max_delta_allowed, prune_condition_semiglobal),
+            max_delta_allowed, prune_condition_semiglobal, find_all_alignments),
         128 => wf_align::<u128>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Semiglobal, parallelize_match,
-            max_delta_allowed, prune_condition_semiglobal), 
+            max_delta_allowed, prune_condition_semiglobal, find_all_alignments), 
         _ => wf_align::<usize>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Semiglobal, parallelize_match,
-            max_delta_allowed, prune_condition_semiglobal),
+            max_delta_allowed, prune_condition_semiglobal, find_all_alignments),
     };
 
     alignment_to_gaf_struct(sequence, path_graph, &optimal_alignments[0])

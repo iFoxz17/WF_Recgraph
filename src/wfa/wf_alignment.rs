@@ -6,6 +6,7 @@ use crate::wfa::wf_implementation::wf_vec::*;
 use crate::wfa::wf_implementation::wf_hash::*;
 
 use std::thread;
+use std::sync::{Arc, Mutex};
 use std::sync::mpsc;
 
 use std::collections::HashSet;
@@ -51,6 +52,7 @@ impl PathStrings {
         -(self.paths_mapping[path].len() as isize) + 1
     } 
 
+    #[allow(unused)]
     #[inline(always)]
     pub fn get_path_length(&self, path: usize) -> usize {
         self.paths_mapping[path].len()
@@ -181,6 +183,7 @@ pub enum AlignmentOperation {
     Deletion(char),
 }
 
+#[derive(Debug)]
 /// Struct that stores the result of an **alignment**;
 /// # Fields
 /// - <code>path</code>: **path** of the **optimal alignment**;
@@ -690,7 +693,7 @@ fn traceback(
     let mut score = alignment_penalty;
 
     let mut wavefront;
-   
+
     while score > 0 {
         
         while v > 0 && i > 0 && graph.get_path_node_label(path_wavefronts.path, v) == sequence[i] {
@@ -709,12 +712,14 @@ fn traceback(
 
                 if prev_k == k - 1 {
                     operations.push(AlignmentOperation::Insertion(sequence[i]));
+
                     i -= 1;
                     score -= ins;
                 }
                 else if prev_k == k {    
                     operations.push(AlignmentOperation::Mismatch(
                         graph.get_path_node_label(path_wavefronts.path, v), sequence[i]));
+
                     v -= 1;
                     i -= 1;
                     score -= m;
@@ -722,6 +727,7 @@ fn traceback(
                 else if prev_k == k + 1 {
                     operations.push(AlignmentOperation::Deletion(
                         graph.get_path_node_label(path_wavefronts.path, v)));
+                    
                     v -= 1;
                     score -= del;
                 }
@@ -801,14 +807,12 @@ fn prune_semiglobal(
 }
 
 fn prune_global( 
-    graph: &PathStrings,
     path_wavefronts: &mut PathWavefronts,
     score: usize,
-    max_delta_allowed: isize
+    max_delta_allowed: usize
 ) -> usize {
     let mut max_offset = 0;
     let mut diagonals_pruned = 0;
-    let path_length = graph.get_path_length(path_wavefronts.path) as isize;
 
     let queue = &mut path_wavefronts.diagonals_queue;
     let mut mem_queue: Queue<(usize, isize)> = Queue::new();
@@ -820,13 +824,12 @@ fn prune_global(
         let (penalty, k) = queue.remove().unwrap();
         
         if penalty == score {
-            let i = wavefront.get_diagonal_offset(k).unwrap() as isize;
-            let v = i as isize - k;
+            let i = wavefront.get_diagonal_offset(k).unwrap();
+            let v = (i as isize - k) as usize;
  
-            if i - path_length + v > max_offset {
-                max_offset = i - path_length + v;
+            if i + v > max_offset {
+                max_offset = i + v;
             }
-            
             tmp_queue.add(k).unwrap();
         }
         else {
@@ -836,13 +839,15 @@ fn prune_global(
 
     while tmp_queue.size() > 0 {
         let k = tmp_queue.remove().unwrap();
-        let i = wavefront.get_diagonal_offset(k).unwrap() as isize;
-        let v = i as isize - k;
+        let i = wavefront.get_diagonal_offset(k).unwrap();
+        let v = (i as isize - k) as usize;
 
-        if max_offset - (i - path_length + v) <= max_delta_allowed {
+        if max_offset - (i + v) <= max_delta_allowed {
             mem_queue.add((score, k)).unwrap();
         }
         else {
+            //mem_queue.add((score, k)).unwrap();
+            wavefront.remove_diagonal(k);
             diagonals_pruned += 1;
         } 
     }
@@ -853,7 +858,6 @@ fn prune_global(
 
 #[inline]
 fn prune( 
-    graph: &PathStrings,
     path_wavefronts: &mut PathWavefronts,
     score: usize,
     align_mode: AlignmentMod,
@@ -863,7 +867,7 @@ fn prune(
         AlignmentMod::Semiglobal | AlignmentMod::EndFreeGlobal => 
             prune_semiglobal(path_wavefronts, score, max_delta_allowed),
         AlignmentMod::Global | AlignmentMod::StartFreeGlobal => 
-            prune_global(graph, path_wavefronts, score, max_delta_allowed as isize),
+            prune_global(path_wavefronts, score, max_delta_allowed),
     }
 }
 
@@ -879,7 +883,8 @@ fn wf_align_to_path<T>(
     parallelize_match: bool,
     max_delta_allowed: usize,
     prune_condition: fn(&PathStrings, &[char], usize, usize, usize, usize) -> bool,
-    maybe_max_score: &Option<usize>
+    find_all_alignments: bool,
+    maybe_max_score_mutex: Arc<Mutex<Option<usize>>>,
 ) -> Alignment 
 where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 
@@ -907,9 +912,11 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 
         extend(sequence, graph, &mut path_wavefronts, d, parallelize_match);
         
-        if let Some(max_score) = *maybe_max_score {
-            if d > max_score {
-                return Alignment::new(path, 0, 0, 0, d, 0);
+        if let Ok(ref mut mutex) = maybe_max_score_mutex.try_lock() {
+            if let Some(max_score) = **mutex {
+                if d > max_score {
+                    return Alignment::new(path, 0, 0, 0, d, diagonals_pruned);
+                }
             }
         }
 
@@ -919,25 +926,45 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
         }
 
         if prune_condition(graph, sequence, path, path_wavefronts.diagonals_queue.size(), max_penalty, d) {
-            diagonals_pruned += prune(graph, &mut path_wavefronts, d, modality, max_delta_allowed);
-        }
+            diagonals_pruned += prune(&mut path_wavefronts, d, modality, max_delta_allowed);
+        }        
         
         expand::<T>(sequence, graph, &mut path_wavefronts, &mut mem_set, d, m, ins, del, wavefront_impl);
 
         d += 1;
     }
 
-    traceback(
-        sequence, 
-        graph, 
-        &mut path_wavefronts, 
-        final_diagonal, 
-        d,
-        m,
-        ins,
-        del,
-        diagonals_pruned
-    )
+    let mut retrieve_traceback = false;
+
+    let mut maybe_max_score = maybe_max_score_mutex.lock().unwrap();
+    if let Some(max_score) = *maybe_max_score {
+        if d < max_score || (find_all_alignments && d == max_score) {
+            *maybe_max_score = Some(d);
+            retrieve_traceback = true;
+        }
+    }
+    else {
+        *maybe_max_score = Some(d);
+        retrieve_traceback = true;
+    }
+    drop(maybe_max_score);      //Release the lock
+    
+    if retrieve_traceback {
+        traceback(
+            sequence, 
+            graph, 
+            &mut path_wavefronts, 
+            final_diagonal, 
+            d,
+            m,
+            ins,
+            del,
+            diagonals_pruned
+        )
+    }
+    else {
+        Alignment::new(path, 0, 0, 0, d, diagonals_pruned)
+    }
 }
 
 /// Runs **WFA** to provide an **optimal alignment** between a <code>graph</code> and a <code>sequence</code>. 
@@ -982,19 +1009,22 @@ pub fn wf_align<T>(
     modality: AlignmentMod,
     parallelize_match: bool,
     max_delta_allowed: usize,
-    prune_condition: fn(&PathStrings, &[char], usize, usize, usize, usize) -> bool
+    prune_condition: fn(&PathStrings, &[char], usize, usize, usize, usize) -> bool,
+    find_all_alignments: bool,
 ) -> usize 
 where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 
     let mut threads_alignments: Vec<Alignment> = Vec::with_capacity(graph.paths_number);
-    let mut maybe_max_score = None;
+    let maybe_max_score = None;
+    let maybe_max_score_mutex = Arc::new(Mutex::new(maybe_max_score));
 
     thread::scope(|s| {
-        let (tx, rx) = mpsc::channel();        
+        let (tx, rx) = mpsc::channel();    
 
         for path in 0..graph.paths_number {
 
             let tx_thread = tx.clone();
+            let thread_maybe_max_score_mutex = Arc::clone(&maybe_max_score_mutex);
 
             s.spawn(move || {
                 let alignment = wf_align_to_path::<T>(
@@ -1009,7 +1039,8 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
                     parallelize_match,
                     max_delta_allowed,
                     prune_condition,
-                    &maybe_max_score
+                    find_all_alignments,
+                    thread_maybe_max_score_mutex,
                 );
                 tx_thread.send(alignment).unwrap();
             });
@@ -1020,14 +1051,7 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
         while alignment_terminated < graph.paths_number {
             match rx.recv() {
                 Ok(alignment) => {
-                    if maybe_max_score.is_some() {
-                        if alignment.score <= maybe_max_score.unwrap() {
-                            maybe_max_score = Some(alignment.score);
-                            threads_alignments.push(alignment);
-                        }
-                    }
-                    else {
-                        maybe_max_score = Some(alignment.score);
+                    if alignment.score == (*maybe_max_score_mutex.lock().unwrap()).unwrap() {
                         threads_alignments.push(alignment);
                     }
                     alignment_terminated += 1;
@@ -1037,15 +1061,30 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
         }
     });
 
-    let mut i = 0;
-    while i < threads_alignments.len() {
-        if threads_alignments[i].score == maybe_max_score.unwrap() {
-            optimal_alignments.push(threads_alignments.swap_remove(i));
+    let mut i = 0; 
+    let max_score = (*maybe_max_score_mutex.lock().unwrap()).unwrap();
+
+    if find_all_alignments {
+        while i < threads_alignments.len() {
+            if threads_alignments[i].score == max_score {
+                optimal_alignments.push(threads_alignments.swap_remove(i));
+            }
+            else {
+                i += 1;
+            }
         }
-        else {
-            i += 1;
+    }
+    else {
+        while i < threads_alignments.len() && optimal_alignments.len() == 0 {
+            if threads_alignments[i].score == max_score &&
+                threads_alignments[i].path_length > 0  {
+                optimal_alignments.push(threads_alignments.swap_remove(i));
+            }
+            else {
+                i += 1;
+            }
         }
     }
 
-    maybe_max_score.unwrap()
+    max_score
 }

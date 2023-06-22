@@ -22,6 +22,8 @@ pub trait Wavefront {
 
     /// Returns <code>true</code> if <code>diagonal</code> exists; <code>false</code> otherwise.
     fn exist(&self, diagonal: isize) -> bool;
+
+    fn remove_diagonal(&mut self, diagonal: isize) -> bool;
 }
 
 #[inline(always)]

@@ -335,7 +335,7 @@ fn main() {
             let print_status = true;
             let mut part_elapsed;
 
-	        let (m, ins, del) = (1, 3, 2);
+	        let (m, ins, del) = (2, 3, 3);
 
             if print_status {
                 eprintln!("Starting alignment with options: ");
