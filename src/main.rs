@@ -312,7 +312,14 @@ fn main() {
                                 (i + 1) as f64 / sequences.len() as f64 * 100.0 
                         );
                     }
-                    let mut gaf = wfa::wf_pathwise_alignment_global(seq, &graph, m, ins, del);
+                    let mut gaf = wfa::wf_pathwise_alignment_global(
+                        seq, 
+                        &graph,
+                        &wfa::path_graph_to_path_strings(&graph), 
+                        m, 
+                        ins, 
+                        del
+                    );
                     gaf.query_name = seq_names[i].clone();
                     utils::write_gaf(&gaf.to_string(), i);
                     if print_status {
@@ -384,7 +391,14 @@ fn main() {
                                 (i + 1) as f64 / sequences.len() as f64 * 100.0 
                         );
                     }
-                    let mut gaf = wfa::wf_pathwise_alignment_semiglobal(seq, &graph, m, ins, del);
+                    let mut gaf = wfa::wf_pathwise_alignment_semiglobal(
+                        seq, 
+                        &graph,
+                        &wfa::path_graph_to_path_strings(&graph), 
+                        m, 
+                        ins, 
+                        del
+                    );
                     gaf.query_name = seq_names[i].clone();
                     utils::write_gaf(&gaf.to_string(), i);
                     if print_status {

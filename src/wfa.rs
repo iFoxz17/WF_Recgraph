@@ -15,7 +15,7 @@ use wf_alignment::*;
 use wf_implementation::*;
 
 /// Convert struct PathGraph to struct PathStrings.
-fn path_graph_to_path_strings(pred_graph: &PathGraph) -> PathStrings {
+pub fn path_graph_to_path_strings(pred_graph: &PathGraph) -> PathStrings {
 
     let mut paths_mapping = Vec::with_capacity(pred_graph.paths_number);
     
@@ -119,7 +119,6 @@ fn choose_uint_size(graph: &PathGraph, sequence: &[char]) -> usize {
 }
 
 /// Sperimental for pruning heuristics. Choose the maximum distance allowed to the furthest offset.
-#[allow(unused)]
 #[inline]
 fn choose_max_delta_allowed(_graph: &PathStrings, sequence: &[char], modality: AlignmentMod) -> usize {
     match modality {
@@ -131,7 +130,6 @@ fn choose_max_delta_allowed(_graph: &PathStrings, sequence: &[char], modality: A
 }
 
 /// Sperimental for pruning heuristics. Condition to run the pruning in semiglobal mode.
-#[allow(unused)]
 #[inline(always)]
 fn prune_condition_semiglobal(
     graph: &PathStrings, 
@@ -142,12 +140,9 @@ fn prune_condition_semiglobal(
     d: usize
 ) -> bool {
 
-    /*
-    d >= 10 && actual_diagonals_number as f64 / 
+    d >= 5 && actual_diagonals_number as f64 / 
                 ((sequence.len() - 1 + (-graph.get_min_diagonal(path)) as usize) * max_penalty) as f64 >
-                0.6  
-    */
-    false
+                0.5      
 }
 
 /// Sperimental for pruning heuristics. Condition to run the pruning in global mode.
@@ -184,12 +179,12 @@ fn prune_condition_global(
 pub fn wf_pathwise_alignment_global(
     sequence: &[char],
     path_graph: &PathGraph,
+    graph: &PathStrings,
     m: usize,
     ins: usize,
     del: usize,
 ) -> GAFStruct {
 
-    let graph = path_graph_to_path_strings(path_graph);
     let mut optimal_alignments = Vec::new();
     let wf_implementation = WavefrontImpl::WavefrontVec;
     //let wf_implementation = WavefrontImpl::WavefrontHash;
@@ -237,12 +232,12 @@ pub fn wf_pathwise_alignment_global(
 pub fn wf_pathwise_alignment_semiglobal(
     sequence: &[char],
     path_graph: &PathGraph,
+    graph: &PathStrings,
     m: usize,
     ins: usize,
     del: usize,
 ) -> GAFStruct {
 
-    let graph = path_graph_to_path_strings(path_graph);
     let mut optimal_alignments = Vec::new();
     let wf_implementation = WavefrontImpl::WavefrontVec;
     //let wf_implementation = WavefrontImpl::WavefrontHash;
@@ -293,12 +288,12 @@ pub fn wf_pathwise_alignment_semiglobal(
 pub fn wf_pathwise_alignment_end_free_global(
     sequence: &[char],
     path_graph: &PathGraph,
+    graph: &PathStrings,
     m: usize,
     ins: usize,
     del: usize,
 ) -> GAFStruct {
 
-    let graph = path_graph_to_path_strings(path_graph);
     let mut optimal_alignments = Vec::new();
     let wf_implementation = WavefrontImpl::WavefrontVec;
     //let wf_implementation = WavefrontImpl::WavefrontHash;
@@ -346,12 +341,12 @@ pub fn wf_pathwise_alignment_end_free_global(
 pub fn wf_pathwise_alignment_start_free_global(
     sequence: &[char],
     path_graph: &PathGraph,
+    graph: &PathStrings,
     m: usize,
     ins: usize,
     del: usize,
 ) -> GAFStruct {
 
-    let graph = path_graph_to_path_strings(path_graph);
     let mut optimal_alignments = Vec::new();
     let wf_implementation = WavefrontImpl::WavefrontVec;
     //let wf_implementation = WavefrontImpl::WavefrontHash;

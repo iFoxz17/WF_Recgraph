@@ -760,7 +760,6 @@ fn traceback(
 }
 
 /// Sperimental for pruning heuristics. Peform the pruning in semiglobal mode.
-#[allow(unused)]
 fn prune_semiglobal(
     path_wavefronts: &mut PathWavefronts,
     score: usize,
@@ -808,8 +807,7 @@ fn prune_semiglobal(
     diagonals_pruned
 }
 
-/// Sperimental for pruning heuristics. Peform the pruning in global mode.
-#[allow(unused)]
+/// Sperimental for pruning heuristics (not working). Peform the pruning in global mode.
 fn prune_global( 
     path_wavefronts: &mut PathWavefronts,
     score: usize,
@@ -862,7 +860,6 @@ fn prune_global(
 }
 
 /// Sperimental for pruning heuristics.
-#[allow(unused)]
 #[inline]
 fn prune( 
     path_wavefronts: &mut PathWavefronts,
@@ -889,8 +886,8 @@ fn wf_align_to_path<T>(
     wavefront_impl: WavefrontImpl,
     modality: AlignmentMod,
     parallelize_match: bool,
-    _max_delta_allowed: usize,
-    _prune_condition: fn(&PathStrings, &[char], usize, usize, usize, usize) -> bool,
+    max_delta_allowed: usize,
+    prune_condition: fn(&PathStrings, &[char], usize, usize, usize, usize) -> bool,
     find_all_alignments: bool,
     maybe_max_score_mutex: Arc<Mutex<Option<usize>>>,
 ) -> Alignment 
@@ -905,12 +902,12 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
         max(m, ins, del)
     );
 
-    let _max_penalty = max(m, ins, del);
+    let max_penalty = max(m, ins, del);
 
     let mut mem_set: HashSet<(usize, isize)> = HashSet::new();
 
     let final_diagonal : isize;
-    let diagonals_pruned = 0;
+    let mut diagonals_pruned = 0;
 
     set_base_case(graph, &mut path_wavefronts, modality);
 
@@ -934,11 +931,10 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
         }
 
         //Sperimental for pruning heuristics
-        /*
+        
         if prune_condition(graph, sequence, path, path_wavefronts.diagonals_queue.size(), max_penalty, d) {
             diagonals_pruned += prune(&mut path_wavefronts, d, modality, max_delta_allowed);
-        } 
-        */       
+        }        
         
         expand::<T>(sequence, graph, &mut path_wavefronts, &mut mem_set, d, m, ins, del, wavefront_impl);
 
