@@ -265,9 +265,9 @@ fn main() {
             let print_status = true;
             let mut part_elapsed = 0;
             let mut last_partial;
-            let (m, ins, del) = (1, 3, 2);
+            let (m, ins, del) = (1, 1, 1);
 
-            let mut times = vec![0];
+            let mut times = vec![];
 
             if print_status {
                 eprintln!("Starting alignment with options: ");
@@ -287,6 +287,10 @@ fn main() {
 
             if recgraph_mod {
                 for (i, seq) in sequences.iter().enumerate() {
+                    if i == 100 {
+                        break;
+                    }
+
                     if print_status {
                         eprint!("Processing {}/{} ({:.1}%) -> ", 
                                 i + 1, sequences.len(),
@@ -313,6 +317,10 @@ fn main() {
             }
             else {
                 for (i, seq) in sequences.iter().enumerate() {
+                    if i == 100 {
+                        break;
+                    }
+
                     if print_status {
                         eprint!("Processing {}/{} ({:.1}%) -> ", 
                                 i + 1, sequences.len(),
@@ -350,15 +358,31 @@ fn main() {
                 eprintln!("Stats:");
                 eprintln!("----------------------------------------------------------------------------------");
                 eprintln!("Number of alignments: {}", times.len());
-                eprintln!("Mean time for alignment: {:.1}", 
+                eprintln!("Mean time for alignment: {:.1} s", 
                 statistical::mean(
                     &(times.iter().map(|x| *x as f64 / 1000.0).collect::<Vec<f64>>()), 
                 ));
-                eprintln!("SD time for alignment: {:.1}", 
+                eprintln!("SD time for alignment: {:.1} s", 
                 statistical::standard_deviation(
                     &(times.iter().map(|x| *x as f64 / 1000.0).collect::<Vec<f64>>()), 
                     None
                 ));
+                let mut max = 0;
+                let mut min = times[0];
+                for time in times {
+                    if time > max {
+                        max = time;
+                    }
+                    if time < min {
+                        min = time;
+                    }
+                }
+                eprintln!("Max time of an alignment: {:.1} s",
+                max as f64 / 1000.0
+                );
+                eprintln!("Min time of an alignment: {:.1} s",
+                min as f64 / 1000.0
+                );
             }
         }
         5 => {
@@ -389,6 +413,10 @@ fn main() {
 
             if recgraph_mod {
                 for (i, seq) in sequences.iter().enumerate() {
+                    if i == 100 {
+                        break;
+                    }
+
                     if print_status {
                         eprint!("Processing {}/{} ({:.1}%) -> ", 
                                 i + 1, sequences.len(),
@@ -416,6 +444,10 @@ fn main() {
             }
             else {
                 for (i, seq) in sequences.iter().enumerate() {
+                    if i == 100 {
+                        break;
+                    }
+
                     if print_status { 
                         eprint!("Processing {}/{} ({:.1}%) -> ", 
                                 i + 1, sequences.len(),
@@ -451,16 +483,32 @@ fn main() {
                 eprintln!("----------------------------------------------------------------------------------");
                 eprintln!("Stats:");
                 eprintln!("----------------------------------------------------------------------------------");
-                eprintln!("Number of alignments: {}", times.len() - 1);
-                eprintln!("Mean time for alignment: {:.1}", 
+                eprintln!("Number of alignments: {}", times.len());
+                eprintln!("Mean time for alignment: {:.1} s", 
                 statistical::mean(
                     &(times.iter().map(|x| *x as f64 / 1000.0).collect::<Vec<f64>>()), 
                 ));
-                eprintln!("SD time for alignment: {:.1}", 
+                eprintln!("SD time for alignment: {:.1} s", 
                 statistical::standard_deviation(
                     &(times.iter().map(|x| *x as f64 / 1000.0).collect::<Vec<f64>>()), 
                     None
                 ));
+                let mut max = 0;
+                let mut min = times[0];
+                for time in times {
+                    if time > max {
+                        max = time;
+                    }
+                    if time < min {
+                        min = time;
+                    }
+                }
+                eprintln!("Max time of an alignment: {:.1} s",
+                max as f64 / 1000.0
+                );
+                eprintln!("Min time of an alignment: {:.1} s",
+                min as f64 / 1000.0
+                );
             }
         }
         6 => {
