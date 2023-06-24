@@ -34,7 +34,7 @@ pub fn path_graph_to_path_strings(pred_graph: &PathGraph) -> PathStrings {
     PathStrings::new(pred_graph.lnz.clone(), paths_mapping, pred_graph.paths_number)
 }
 
-/// Convert from stuct Alignment to struct GAFStruct.
+/// Convert from struct Alignment to struct GAFStruct.
 fn alignment_to_gaf_struct(sequence: &[char], path_graph: &PathGraph, alignment: &Alignment) -> GAFStruct {
     let comments = format!(
         "{}, best path: {}, score: {}\t{}",

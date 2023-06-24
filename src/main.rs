@@ -263,8 +263,11 @@ fn main() {
 
             let recgraph_mod = false;
             let print_status = true;
-            let mut part_elapsed;
+            let mut part_elapsed = 0;
+            let mut last_partial;
             let (m, ins, del) = (1, 3, 2);
+
+            let mut times = vec![0];
 
             if print_status {
                 eprintln!("Starting alignment with options: ");
@@ -294,12 +297,16 @@ fn main() {
                     gaf.query_name = seq_names[i].clone();
                     utils::write_gaf(&gaf.to_string(), i);
                     if print_status {
-                        part_elapsed = now.elapsed().unwrap().as_millis(); 
-                        eprintln!("Done: {:.1} s from start, expecting {:.1} s, {:.1} s remaining, mean for alignment {:.1} s",
+                        last_partial = part_elapsed;
+                        part_elapsed = now.elapsed().unwrap().as_millis();
+                        times.push(part_elapsed - last_partial);
+                        
+                        eprintln!("Done: {:.1} s from start, expecting {:.1} s, {:.1} s remaining, mean for alignment {:.1} s, delta {:.1}", 
                                 part_elapsed as f64 / 1000.0,
                                 part_elapsed as f64 / 1000.0 / (i + 1) as f64 * sequences.len() as f64,
                                 part_elapsed as f64 / 1000.0 / (i + 1) as f64 * (sequences.len() - i - 1) as f64,
-                                part_elapsed as f64 / 1000.0 / (i + 1) as f64
+				                part_elapsed as f64 / 1000.0 / (i + 1) as f64,
+                                times[times.len() - 1] as f64 / 1000.0
                         );
                     }
                 }
@@ -323,26 +330,46 @@ fn main() {
                     gaf.query_name = seq_names[i].clone();
                     utils::write_gaf(&gaf.to_string(), i);
                     if print_status {
+                        last_partial = part_elapsed;
                         part_elapsed = now.elapsed().unwrap().as_millis();
-                        eprintln!("Done: {:.1} s from start, expecting {:.1} s, {:.1} s remaining, mean for alignment {:.1} s", 
+                        times.push(part_elapsed - last_partial);
+                        
+                        eprintln!("Done: {:.1} s from start, expecting {:.1} s, {:.1} s remaining, mean {:.1} s, delta {:.1} s", 
                                 part_elapsed as f64 / 1000.0,
                                 part_elapsed as f64 / 1000.0 / (i + 1) as f64 * sequences.len() as f64,
                                 part_elapsed as f64 / 1000.0 / (i + 1) as f64 * (sequences.len() - i - 1) as f64,
-				part_elapsed as f64 / 1000.0 / (i + 1) as f64 
+				                part_elapsed as f64 / 1000.0 / (i + 1) as f64,
+                                times[times.len() - 1] as f64 / 1000.0,                                
                         );
                     }
                 }
             }
-            
+
+            if print_status {
+                eprintln!("----------------------------------------------------------------------------------");
+                eprintln!("Stats:");
+                eprintln!("----------------------------------------------------------------------------------");
+                eprintln!("Number of alignments: {}", times.len());
+                eprintln!("Mean time for alignment: {:.1}", 
+                statistical::mean(
+                    &(times.iter().map(|x| *x as f64 / 1000.0).collect::<Vec<f64>>()), 
+                ));
+                eprintln!("SD time for alignment: {:.1}", 
+                statistical::standard_deviation(
+                    &(times.iter().map(|x| *x as f64 / 1000.0).collect::<Vec<f64>>()), 
+                    None
+                ));
+            }
         }
         5 => {
             let graph = pathwise_graph::read_graph_w_path(&graph_path, false);
 
             let recgraph_mod = false;
             let print_status = true;
-            let mut part_elapsed;
-
-	        let (m, ins, del) = (1, 3, 2);
+            let mut part_elapsed = 0;
+            let mut last_partial;
+	        let (m, ins, del) = (1, 1, 1);
+            let mut times = vec![];
 
             if print_status {
                 eprintln!("Starting alignment with options: ");
@@ -372,12 +399,16 @@ fn main() {
                     gaf.query_name = seq_names[i].clone();
                     utils::write_gaf(&gaf.to_string(), i);
                     if print_status {
+                        last_partial = part_elapsed;
                         part_elapsed = now.elapsed().unwrap().as_millis(); 
-                        eprintln!("Done: {:.1} s from start, expecting {:.1} s, {:.1} s remaining, mean for alignment {:.1} s",
+                        times.push(part_elapsed - last_partial);
+                        
+                        eprintln!("Done: {:.1} s from start, expecting {:.1} s, {:.1} s remaining, mean for alignment {:.1} s, delta {:.1}", 
                                 part_elapsed as f64 / 1000.0,
                                 part_elapsed as f64 / 1000.0 / (i + 1) as f64 * sequences.len() as f64,
                                 part_elapsed as f64 / 1000.0 / (i + 1) as f64 * (sequences.len() - i - 1) as f64,
-                                part_elapsed as f64 / 1000.0 / (i + 1) as f64
+				                part_elapsed as f64 / 1000.0 / (i + 1) as f64,
+                                times[times.len() - 1] as f64 / 1000.0
                         );
                     }
 
@@ -402,15 +433,34 @@ fn main() {
                     gaf.query_name = seq_names[i].clone();
                     utils::write_gaf(&gaf.to_string(), i);
                     if print_status {
+                        last_partial = part_elapsed;
                         part_elapsed = now.elapsed().unwrap().as_millis(); 
-                        eprintln!("Done: {:.1} s from start, expecting {:.1} s, {:.1} s remaining, mean for alignment: {:.1} s", 
+                        times.push(part_elapsed - last_partial);
+                        
+                        eprintln!("Done: {:.1} s from start, expecting {:.1} s, {:.1} s remaining, mean for alignment {:.1} s, delta {:.1}", 
                                 part_elapsed as f64 / 1000.0,
                                 part_elapsed as f64 / 1000.0 / (i + 1) as f64 * sequences.len() as f64,
                                 part_elapsed as f64 / 1000.0 / (i + 1) as f64 * (sequences.len() - i - 1) as f64,
-				part_elapsed as f64 / 1000.0 / (i + 1) as f64
+				                part_elapsed as f64 / 1000.0 / (i + 1) as f64,
+                                times[times.len() - 1] as f64 / 1000.0
                         );
                     }
                 }
+            }
+            if print_status {
+                eprintln!("----------------------------------------------------------------------------------");
+                eprintln!("Stats:");
+                eprintln!("----------------------------------------------------------------------------------");
+                eprintln!("Number of alignments: {}", times.len() - 1);
+                eprintln!("Mean time for alignment: {:.1}", 
+                statistical::mean(
+                    &(times.iter().map(|x| *x as f64 / 1000.0).collect::<Vec<f64>>()), 
+                ));
+                eprintln!("SD time for alignment: {:.1}", 
+                statistical::standard_deviation(
+                    &(times.iter().map(|x| *x as f64 / 1000.0).collect::<Vec<f64>>()), 
+                    None
+                ));
             }
         }
         6 => {
