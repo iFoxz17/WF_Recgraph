@@ -101,16 +101,16 @@ fn choose_uint_size(graph: &PathGraph, sequence: &[char]) -> usize {
     if choose_usize {
         0
     }
-    else if max(graph.lnz.len(), sequence.len()) < usize::pow(2, 7) - 1 {
+    else if max(graph.lnz.len(), sequence.len()) < usize::pow(2, 8) - 1 {
         8
     } 
-    else if max(graph.lnz.len(), sequence.len()) < usize::pow(2, 15) - 1 {
+    else if max(graph.lnz.len(), sequence.len()) < usize::pow(2, 16) - 1 {
         16
     }
-    else if max(graph.lnz.len(), sequence.len()) < usize::pow(2, 31) - 1 {
+    else if max(graph.lnz.len(), sequence.len()) < usize::pow(2, 32) - 1 {
         32
     }
-    else if max(graph.lnz.len(), sequence.len()) < usize::pow(2, 63) - 1 {
+    else if max(graph.lnz.len(), sequence.len()) < usize::pow(2, 64) - 1 {
         64
     }
     else {
