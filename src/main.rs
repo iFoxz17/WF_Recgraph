@@ -269,7 +269,16 @@ fn main() {
 
             let mut times = vec![];
 
+            let string_graph = &wfa::path_graph_to_path_strings(&graph); 
+
             if print_status {
+                let mut tot_path_length = 0;
+
+                for path in 0..graph.paths_number {
+                    tot_path_length += string_graph.get_path_length(path);
+                }
+                let mean_path_length = tot_path_length as f64 / graph.paths_number as f64;
+
                 eprintln!("Starting alignment with options: ");
                 eprint!("Algorithm used: ");
                 if recgraph_mod {
@@ -280,6 +289,8 @@ fn main() {
                 }	
                 eprintln!("Graph linearization length: {}", graph.lnz.len());
                 eprintln!("Graph number of paths: {}", graph.paths_number);
+                eprintln!("Graph mean paths length: {:.1}", mean_path_length);
+                eprintln!("Graph paths for node: {:.1}", mean_path_length * graph.paths_number as f64 / graph.lnz.len() as f64);
                 eprintln!("Number of reads: {}", sequences.len());
                 eprintln!("Modality: Global");
                 eprintln!("Print_status = {}", print_status);
@@ -305,12 +316,13 @@ fn main() {
                         part_elapsed = now.elapsed().unwrap().as_millis();
                         times.push(part_elapsed - last_partial);
                         
-                        eprintln!("Done: {:.1} s from start, expecting {:.1} s, {:.1} s remaining, mean for alignment {:.1} s, delta {:.1}", 
+                        eprintln!("Done: {:.1} s from start, expecting {:.1} s, {:.1} s remaining, mean for alignment {:.1} s, delta {:.1} s, read length {}", 
                                 part_elapsed as f64 / 1000.0,
                                 part_elapsed as f64 / 1000.0 / (i + 1) as f64 * sequences.len() as f64,
                                 part_elapsed as f64 / 1000.0 / (i + 1) as f64 * (sequences.len() - i - 1) as f64,
 				                part_elapsed as f64 / 1000.0 / (i + 1) as f64,
-                                times[times.len() - 1] as f64 / 1000.0
+                                times[times.len() - 1] as f64 / 1000.0,
+                                seq.len(),
                         );
                     }
                 }
@@ -330,7 +342,7 @@ fn main() {
                     let mut gaf = wfa::wf_pathwise_alignment_global(
                         seq, 
                         &graph,
-                        &wfa::path_graph_to_path_strings(&graph), 
+                        &string_graph,
                         m, 
                         ins, 
                         del
@@ -342,12 +354,13 @@ fn main() {
                         part_elapsed = now.elapsed().unwrap().as_millis();
                         times.push(part_elapsed - last_partial);
                         
-                        eprintln!("Done: {:.1} s from start, expecting {:.1} s, {:.1} s remaining, mean {:.1} s, delta {:.1} s", 
+                        eprintln!("Done: {:.1} s from start, expecting {:.1} s, {:.1} s remaining, mean {:.1} s, delta {:.1} s, read length {}", 
                                 part_elapsed as f64 / 1000.0,
                                 part_elapsed as f64 / 1000.0 / (i + 1) as f64 * sequences.len() as f64,
                                 part_elapsed as f64 / 1000.0 / (i + 1) as f64 * (sequences.len() - i - 1) as f64,
 				                part_elapsed as f64 / 1000.0 / (i + 1) as f64,
-                                times[times.len() - 1] as f64 / 1000.0,                                
+                                times[times.len() - 1] as f64 / 1000.0,
+                                seq.len()                                
                         );
                     }
                 }
@@ -395,7 +408,16 @@ fn main() {
 	        let (m, ins, del) = (1, 1, 1);
             let mut times = vec![];
 
+            let string_graph = &wfa::path_graph_to_path_strings(&graph); 
+
             if print_status {
+                let mut tot_path_length = 0;
+
+                for path in 0..graph.paths_number {
+                    tot_path_length += string_graph.get_path_length(path);
+                }
+                let mean_path_length = tot_path_length as f64 / graph.paths_number as f64;
+
                 eprintln!("Starting alignment with options: ");
                 eprint!("Algorithm used: ");
                 if recgraph_mod {
@@ -403,9 +425,11 @@ fn main() {
                 }
                 else {
                     eprintln!("wavefront multithread pathwise alignment: m={m}, ins={ins}, del={del}");
-                }
+                }	
                 eprintln!("Graph linearization length: {}", graph.lnz.len());
                 eprintln!("Graph number of paths: {}", graph.paths_number);
+                eprintln!("Graph mean paths length: {:.1}", mean_path_length);
+                eprintln!("Graph paths for node: {:.1}", mean_path_length * graph.paths_number as f64 / graph.lnz.len() as f64);
                 eprintln!("Number of reads: {}", sequences.len());
                 eprintln!("Modality: Semiglobal");
                 eprintln!("Print_status = {}", print_status);
@@ -431,12 +455,13 @@ fn main() {
                         part_elapsed = now.elapsed().unwrap().as_millis(); 
                         times.push(part_elapsed - last_partial);
                         
-                        eprintln!("Done: {:.1} s from start, expecting {:.1} s, {:.1} s remaining, mean for alignment {:.1} s, delta {:.1}", 
+                        eprintln!("Done: {:.1} s from start, expecting {:.1} s, {:.1} s remaining, mean for alignment {:.1} s, delta {:.1} s, read length {}", 
                                 part_elapsed as f64 / 1000.0,
                                 part_elapsed as f64 / 1000.0 / (i + 1) as f64 * sequences.len() as f64,
                                 part_elapsed as f64 / 1000.0 / (i + 1) as f64 * (sequences.len() - i - 1) as f64,
 				                part_elapsed as f64 / 1000.0 / (i + 1) as f64,
-                                times[times.len() - 1] as f64 / 1000.0
+                                times[times.len() - 1] as f64 / 1000.0,
+                                seq.len(),
                         );
                     }
 
@@ -457,7 +482,7 @@ fn main() {
                     let mut gaf = wfa::wf_pathwise_alignment_semiglobal(
                         seq, 
                         &graph,
-                        &wfa::path_graph_to_path_strings(&graph), 
+                        &string_graph, 
                         m, 
                         ins, 
                         del
@@ -469,12 +494,13 @@ fn main() {
                         part_elapsed = now.elapsed().unwrap().as_millis(); 
                         times.push(part_elapsed - last_partial);
                         
-                        eprintln!("Done: {:.1} s from start, expecting {:.1} s, {:.1} s remaining, mean for alignment {:.1} s, delta {:.1}", 
+                        eprintln!("Done: {:.1} s from start, expecting {:.1} s, {:.1} s remaining, mean for alignment {:.1} s, delta {:.1} s, read length {}", 
                                 part_elapsed as f64 / 1000.0,
                                 part_elapsed as f64 / 1000.0 / (i + 1) as f64 * sequences.len() as f64,
                                 part_elapsed as f64 / 1000.0 / (i + 1) as f64 * (sequences.len() - i - 1) as f64,
 				                part_elapsed as f64 / 1000.0 / (i + 1) as f64,
-                                times[times.len() - 1] as f64 / 1000.0
+                                times[times.len() - 1] as f64 / 1000.0,
+                                seq.len(),
                         );
                     }
                 }
