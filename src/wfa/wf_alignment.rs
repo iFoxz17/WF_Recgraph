@@ -1003,7 +1003,7 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 /// ## Time
 /// The alignment to each path is performed by a different **thread** which stops when 
 /// the best solution is found; consequentially, assuming every **thread running in parallel**, 
-/// the **time complexity** is <code>O(max{n, m} d)</code>.
+/// the **time complexity** is <code>O((n+m) d)</code>.
 /// ## Space
 /// The **space complexity** depends on the wavefront implementation chosen; however, for each implementation,
 /// in the **worst case** every diagonal is stored in the wavefront for **every score** lower than the 
