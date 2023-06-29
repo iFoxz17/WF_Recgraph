@@ -623,7 +623,7 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
                 }
             }
 
-            if i < sequence.len() - 1 && v < graph.paths_mapping[path_wavefronts.path].len() - 1 {
+            if i < sequence.len() - 1 && v < graph.get_path_length(path_wavefronts.path) - 1 {
                 next_wavefront = path_wavefronts.wavefronts.get_wavefront(score + m).unwrap();
 
                 if next_wavefront.get_diagonal_offset(k).unwrap_or(0) < i + 1 {
@@ -637,7 +637,7 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
                 }
             }
 
-            if v < graph.paths_mapping[path_wavefronts.path].len() - 1 {
+            if v < graph.get_path_length(path_wavefronts.path) - 1 {
                 next_wavefront = path_wavefronts.wavefronts.get_wavefront(score + del).unwrap();
                 let other_offset = next_wavefront.get_diagonal_offset(k - 1).unwrap_or(0);
 
@@ -986,11 +986,11 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 /// - <code>wavefront_impl</code>: **implementation** to store the wavefronts;
 /// - <code>modality</code>: **alignment modality** to use;
 /// - <code>parallelize_match</code>: if <code>true</code>, every diagonal will be extended by a different **thread**;
-/// otherwise, all the diagonals will be extended **sequentially**.
-/// - <code>max_delta_allowed</code>: **Sperimental for pruning heuristics**. Pruning maximum distance allowed.
-/// - <code>prune_condition</code>: **Sperimental for pruning heuristics**. Function to decide wheter perform pruning or not.
-/// - <code>find_all_alignments</code>: if <code>true</code>, all the best path alignments are returned; otherwise just one.  
-///
+/// otherwise, all the diagonals will be extended **sequentially**;
+/// - <code>max_delta_allowed</code>: **Sperimental for pruning heuristics**. Pruning maximum distance allowed;
+/// - <code>prune_condition</code>: **Sperimental for pruning heuristics**. Function to decide wheter perform pruning or not;
+/// - <code>find_all_alignments</code>: if <code>true</code>, all the best path alignments are returned; otherwise just one; 
+/// - <code>max_threads</code>: max number of **threads running in parallel**.
 /// # Return value
 /// Returns the **value** of the **alignment**; the **sequence(s) of operations** performed are stored in 
 /// <code>optimal_alignments</code>.
@@ -998,16 +998,18 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 /// # Complexity
 /// Let
 /// - <code>n</code>: the length of the **path** which aligns better to the **sequence**,
+/// - <code>p</code>: the numbers of path,
 /// - <code>m</code>: the length of the **sequence**,
 /// - <code>d</code>: the **best alignment score**
 /// ## Time
 /// The alignment to each path is performed by a different **thread** which stops when 
-/// the best solution is found; consequentially, assuming every **thread running in parallel**, 
-/// the **time complexity** is <code>O((n+m) d)</code>.
+/// the best solution is found; consequentially, assuming every **thread running in parallel** (for a low
+/// number of path), the **time complexity** is <code>O(max{n, m} d)</code>. Otherwise, considering an 
+/// arbitrary number of paths, the **time complexity** becomes <code>O(p max{n, m} d)</code>.
 /// ## Space
 /// The **space complexity** depends on the wavefront implementation chosen; however, for each implementation,
 /// in the **worst case** every diagonal is stored in the wavefront for **every score** lower than the 
-/// **optimal alignment value**, so the **worst case space complexity** is <code>O((n + m) d)</code>.
+/// **optimal alignment value**, so the **worst case space complexity** is <code>O(p (n + m) d)</code>.
 pub fn wf_align<T>(
     graph: &PathStrings,
     sequence: &[char],
@@ -1021,6 +1023,7 @@ pub fn wf_align<T>(
     max_delta_allowed: usize,
     prune_condition: fn(&PathStrings, &[char], usize, usize, usize, usize) -> bool,
     find_all_alignments: bool,
+    max_threads: usize,
 ) -> usize 
 where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 
@@ -1029,45 +1032,51 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
     let maybe_max_score_mutex = Arc::new(Mutex::new(maybe_max_score));
 
     thread::scope(|s| {
-        let (tx, rx) = mpsc::channel();    
+        let (tx, rx) = mpsc::channel();
 
-        for path in 0..graph.paths_number {
-
-            let tx_thread = tx.clone();
-            let thread_maybe_max_score_mutex = Arc::clone(&maybe_max_score_mutex);
-
-            s.spawn(move || {
-                let alignment = wf_align_to_path::<T>(
-                    sequence,
-                    graph,
-                    path,
-                    m,
-                    ins,
-                    del,
-                    wavefront_impl,
-                    modality,
-                    parallelize_match,
-                    max_delta_allowed,
-                    prune_condition,
-                    find_all_alignments,
-                    thread_maybe_max_score_mutex,
-                );
-                tx_thread.send(alignment).unwrap();
-            });
-        }
-
+        let mut path = 0;    
+        let mut threads_running = 0;
         let mut alignment_terminated = 0;
-        
+
         while alignment_terminated < graph.paths_number {
+            while threads_running < max_threads && path < graph.paths_number {
+                let tx_thread = tx.clone();
+                let thread_maybe_max_score_mutex = Arc::clone(&maybe_max_score_mutex);
+
+                s.spawn(move || {
+                    let alignment = wf_align_to_path::<T>(
+                        sequence,
+                        graph,
+                        path,
+                        m,
+                        ins,
+                        del,
+                        wavefront_impl,
+                        modality,
+                        parallelize_match,
+                        max_delta_allowed,
+                        prune_condition,
+                        find_all_alignments,
+                        thread_maybe_max_score_mutex,
+                    );
+                    tx_thread.send(alignment).unwrap();
+                });
+
+                threads_running += 1;
+                path += 1;
+            }
+                
             match rx.recv() {
                 Ok(alignment) => {
                     if alignment.score == (*maybe_max_score_mutex.lock().unwrap()).unwrap() {
                         threads_alignments.push(alignment);
                     }
-                    alignment_terminated += 1;
                 },
                 Err(_) => (),
             }
+
+            alignment_terminated += 1;
+            threads_running -= 1;
         }
     });
 

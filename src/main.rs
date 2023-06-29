@@ -266,6 +266,7 @@ fn main() {
             let mut part_elapsed = 0;
             let mut last_partial;
             let (m, ins, del) = (1, 1, 1);
+            let max_threads = 100;
 
             let mut times = vec![];
 
@@ -345,7 +346,8 @@ fn main() {
                         &string_graph,
                         m, 
                         ins, 
-                        del
+                        del,
+                        max_threads,
                     );
                     gaf.query_name = seq_names[i].clone();
                     utils::write_gaf(&gaf.to_string(), i);
@@ -406,6 +408,7 @@ fn main() {
             let mut part_elapsed = 0;
             let mut last_partial;
 	        let (m, ins, del) = (1, 1, 1);
+            let max_threads = 500;
             let mut times = vec![];
 
             let string_graph = &wfa::path_graph_to_path_strings(&graph); 
@@ -485,7 +488,8 @@ fn main() {
                         &string_graph, 
                         m, 
                         ins, 
-                        del
+                        del,
+                        max_threads
                     );
                     gaf.query_name = seq_names[i].clone();
                     utils::write_gaf(&gaf.to_string(), i);
