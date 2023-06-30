@@ -294,6 +294,7 @@ fn main() {
                 eprintln!("Graph paths for node: {:.1}", mean_path_length * graph.paths_number as f64 / graph.lnz.len() as f64);
                 eprintln!("Number of reads: {}", sequences.len());
                 eprintln!("Modality: Global");
+                eprintln!("Max threads: {}", max_threads.unwrap_or(graph.paths_number));
                 eprintln!("Print_status = {}", print_status);
             }
 
@@ -435,6 +436,7 @@ fn main() {
                 eprintln!("Graph paths for node: {:.1}", mean_path_length * graph.paths_number as f64 / graph.lnz.len() as f64);
                 eprintln!("Number of reads: {}", sequences.len());
                 eprintln!("Modality: Semiglobal");
+                eprintln!("Max threads: {}", max_threads.unwrap_or(graph.paths_number));
                 eprintln!("Print_status = {}", print_status);
             }
 
