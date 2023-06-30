@@ -178,7 +178,8 @@ fn prune_condition_global(
 /// - <code>m</code>: **mismatch penalty**;
 /// - <code>ins</code>: **insertion penalty**;
 /// - <code>del</code>: **deletion penalty**;
-/// - <code>max_threads</code>: max number of **threads running in parallel**.
+/// - <code>max_threads</code>: max number of **threads running in parallel** (<code>None</code>
+/// for using all threads avaibles).
 /// # Return value
 /// Returns a <code>GAFStruct</code> which contains all the alignment informations.
 pub fn wf_pathwise_alignment_global(
@@ -188,7 +189,7 @@ pub fn wf_pathwise_alignment_global(
     m: usize,
     ins: usize,
     del: usize,
-    max_threads: usize,
+    max_threads: Option<usize>,
 ) -> GAFStruct {
 
     let mut optimal_alignments = Vec::new();
@@ -233,7 +234,8 @@ pub fn wf_pathwise_alignment_global(
 /// - <code>m</code>: **mismatch penalty**;
 /// - <code>ins</code>: **insertion penalty**;
 /// - <code>del</code>: **deletion penalty**;
-/// - <code>max_threads</code>: max number of **threads running in parallel**.
+/// - <code>max_threads</code>: max number of **threads running in parallel** (<code>None</code>
+/// for using all threads avaibles).
 /// # Return value
 /// Returns a <code>GAFStruct</code> which contains all the alignment informations.
 pub fn wf_pathwise_alignment_semiglobal(
@@ -243,7 +245,7 @@ pub fn wf_pathwise_alignment_semiglobal(
     m: usize,
     ins: usize,
     del: usize,
-    max_threads: usize,
+    max_threads: Option<usize>,
 ) -> GAFStruct {
 
     let mut optimal_alignments = Vec::new();
@@ -291,7 +293,8 @@ pub fn wf_pathwise_alignment_semiglobal(
 /// - <code>m</code>: **mismatch penalty**;
 /// - <code>ins</code>: **insertion penalty**;
 /// - <code>del</code>: **deletion penalty**;
-/// - <code>max_threads</code>: max number of **threads running in parallel**.
+/// - <code>max_threads</code>: max number of **threads running in parallel** (<code>None</code>
+/// for using all threads avaibles).
 /// # Return value
 /// Returns a <code>GAFStruct</code> which contains all the alignment informations.
 pub fn wf_pathwise_alignment_end_free_global(
@@ -301,7 +304,7 @@ pub fn wf_pathwise_alignment_end_free_global(
     m: usize,
     ins: usize,
     del: usize,
-    max_threads: usize,
+    max_threads: Option<usize>,
 ) -> GAFStruct {
 
     let mut optimal_alignments = Vec::new();
@@ -346,7 +349,8 @@ pub fn wf_pathwise_alignment_end_free_global(
 /// - <code>m</code>: **mismatch penalty**;
 /// - <code>ins</code>: **insertion penalty**;
 /// - <code>del</code>: **deletion penalty**;
-/// - <code>max_threads</code>: max number of **threads running in parallel**.
+/// - <code>max_threads</code>: max number of **threads running in parallel** (<code>None</code>
+/// for using all threads avaibles).
 /// # Return value
 /// Returns a <code>GAFStruct</code> which contains all the alignment informations.
 pub fn wf_pathwise_alignment_start_free_global(
@@ -356,7 +360,7 @@ pub fn wf_pathwise_alignment_start_free_global(
     m: usize,
     ins: usize,
     del: usize,
-    max_threads: usize,
+    max_threads: Option<usize>,
 ) -> GAFStruct {
 
     let mut optimal_alignments = Vec::new();

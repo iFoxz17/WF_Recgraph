@@ -1023,13 +1023,15 @@ pub fn wf_align<T>(
     max_delta_allowed: usize,
     prune_condition: fn(&PathStrings, &[char], usize, usize, usize, usize) -> bool,
     find_all_alignments: bool,
-    max_threads: usize,
+    maybe_max_threads: Option<usize>,
 ) -> usize 
 where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 
     let mut threads_alignments: Vec<Alignment> = Vec::with_capacity(graph.paths_number);
     let maybe_max_score = None;
     let maybe_max_score_mutex = Arc::new(Mutex::new(maybe_max_score));
+
+    let max_threads = maybe_max_threads.unwrap_or(graph.paths_number);
 
     thread::scope(|s| {
         let (tx, rx) = mpsc::channel();

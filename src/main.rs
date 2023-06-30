@@ -266,7 +266,7 @@ fn main() {
             let mut part_elapsed = 0;
             let mut last_partial;
             let (m, ins, del) = (1, 1, 1);
-            let max_threads = 100;
+            let max_threads = Some(3);
 
             let mut times = vec![];
 
@@ -408,7 +408,7 @@ fn main() {
             let mut part_elapsed = 0;
             let mut last_partial;
 	        let (m, ins, del) = (1, 1, 1);
-            let max_threads = 500;
+            let max_threads = None;
             let mut times = vec![];
 
             let string_graph = &wfa::path_graph_to_path_strings(&graph); 
