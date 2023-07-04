@@ -180,8 +180,11 @@ fn prune_condition_global(
 /// - <code>del</code>: **deletion penalty**;
 /// - <code>max_threads</code>: max number of **threads running in parallel** (<code>None</code>
 /// for using all threads avaibles).
+/// - <code>score_threshold</code>: max score before abandone an alignment (<code>None</code>
+/// to not set a threshold).
 /// # Return value
-/// Returns a <code>GAFStruct</code> which contains all the alignment informations.
+/// Returns a <code>GAFStruct</code> which contains all the alignment informations. If no
+/// alignment is found (because of the threshold), an empty <code>GAFStruct</code> is returned.
 pub fn wf_pathwise_alignment_global(
     sequence: &[char],
     path_graph: &PathGraph,
@@ -190,6 +193,7 @@ pub fn wf_pathwise_alignment_global(
     ins: usize,
     del: usize,
     max_threads: Option<usize>,
+    score_threshold: Option<usize>,
 ) -> GAFStruct {
 
     let mut optimal_alignments = Vec::new();
@@ -199,31 +203,41 @@ pub fn wf_pathwise_alignment_global(
     let parallelize_match = false;
     let uint_type = choose_uint_size(path_graph, sequence);
     let max_delta_allowed = choose_max_delta_allowed(&graph, sequence, AlignmentMod::Global);
-
     let find_all_alignments = false;
 
     let _d = match uint_type {
         8 => wf_align::<u8>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Global, parallelize_match, 
-            max_delta_allowed, prune_condition_global, find_all_alignments, max_threads),
+            max_delta_allowed, prune_condition_global, find_all_alignments, 
+            max_threads, score_threshold),
         16 => wf_align::<u16>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Global, parallelize_match, 
-            max_delta_allowed, prune_condition_global, find_all_alignments, max_threads),
+            max_delta_allowed, prune_condition_global, find_all_alignments, 
+            max_threads, score_threshold),
         32 => wf_align::<u32>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Global, parallelize_match, 
-            max_delta_allowed, prune_condition_global, find_all_alignments, max_threads),
+            max_delta_allowed, prune_condition_global, find_all_alignments, 
+            max_threads, score_threshold),
         64 => wf_align::<u64>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Global, parallelize_match, 
-            max_delta_allowed, prune_condition_global, find_all_alignments, max_threads),
+            max_delta_allowed, prune_condition_global, find_all_alignments, 
+            max_threads, score_threshold),
         128 => wf_align::<u128>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Global, parallelize_match, 
-            max_delta_allowed, prune_condition_global, find_all_alignments, max_threads), 
+            max_delta_allowed, prune_condition_global, find_all_alignments, 
+            max_threads, score_threshold), 
         _ => wf_align::<usize>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Global, parallelize_match, 
-            max_delta_allowed, prune_condition_global, find_all_alignments, max_threads),
+            max_delta_allowed, prune_condition_global, find_all_alignments, 
+            max_threads, score_threshold),
     };
 
-    alignment_to_gaf_struct(sequence, path_graph, &optimal_alignments[0])
+    if optimal_alignments.len() > 0 {
+        alignment_to_gaf_struct(sequence, path_graph, &optimal_alignments[0])
+    }
+    else {
+        GAFStruct::new()
+    }
 }
 
 /// Runs **multiple threads WFA** to provide a **semiglobal optimal alignment** between a 
@@ -236,8 +250,11 @@ pub fn wf_pathwise_alignment_global(
 /// - <code>del</code>: **deletion penalty**;
 /// - <code>max_threads</code>: max number of **threads running in parallel** (<code>None</code>
 /// for using all threads avaibles).
+/// - <code>score_threshold</code>: max score before abandone an alignment (<code>None</code>
+/// to not set a threshold).
 /// # Return value
-/// Returns a <code>GAFStruct</code> which contains all the alignment informations.
+/// Returns a <code>GAFStruct</code> which contains all the alignment informations. If no
+/// alignment is found (because of the threshold), an empty <code>GAFStruct</code> is returned.
 pub fn wf_pathwise_alignment_semiglobal(
     sequence: &[char],
     path_graph: &PathGraph,
@@ -246,6 +263,7 @@ pub fn wf_pathwise_alignment_semiglobal(
     ins: usize,
     del: usize,
     max_threads: Option<usize>,
+    score_threshold: Option<usize>,
 ) -> GAFStruct {
 
     let mut optimal_alignments = Vec::new();
@@ -254,35 +272,44 @@ pub fn wf_pathwise_alignment_semiglobal(
     //let wf_implementation = WavefrontImpl::WavefrontMixed(0.3);
     let parallelize_match = false;
     let uint_type = choose_uint_size(path_graph, sequence);
-
     let max_delta_allowed = choose_max_delta_allowed(&graph, sequence, AlignmentMod::Semiglobal);
-
     let find_all_alignments = false;
 
     let _d = match uint_type {
         8 => wf_align::<u8>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Semiglobal, parallelize_match, 
-            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, max_threads),
+            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, 
+            max_threads, score_threshold),
         16 => wf_align::<u16>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Semiglobal, parallelize_match, 
-            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, max_threads),
+            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, 
+            max_threads, score_threshold),
         32 => wf_align::<u32>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Semiglobal, parallelize_match,
-            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, max_threads),
+            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, 
+            max_threads, score_threshold),
         64 => wf_align::<u64>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Semiglobal, parallelize_match,
-            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, max_threads),
+            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, 
+            max_threads, score_threshold),
         128 => wf_align::<u128>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Semiglobal, parallelize_match,
-            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, max_threads), 
+            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, 
+            max_threads, score_threshold), 
         _ => wf_align::<usize>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::Semiglobal, parallelize_match,
-            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, max_threads),
+            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, 
+            max_threads, score_threshold),
     };
 
     //eprintln!("Diagonals pruned: {}, uint_type: {uint_type}", optimal_alignments[0].diagonals_pruned);
 
-    alignment_to_gaf_struct(sequence, path_graph, &optimal_alignments[0])
+    if optimal_alignments.len() > 0 {
+        alignment_to_gaf_struct(sequence, path_graph, &optimal_alignments[0])
+    }
+    else {
+        GAFStruct::new()
+    }
 }
 
 /// Runs **multiple threads WFA** to provide an **end free global optimal alignment** between a 
@@ -295,8 +322,11 @@ pub fn wf_pathwise_alignment_semiglobal(
 /// - <code>del</code>: **deletion penalty**;
 /// - <code>max_threads</code>: max number of **threads running in parallel** (<code>None</code>
 /// for using all threads avaibles).
+/// - <code>score_threshold</code>: max score before abandone an alignment (<code>None</code>
+/// to not set a threshold).
 /// # Return value
-/// Returns a <code>GAFStruct</code> which contains all the alignment informations.
+/// Returns a <code>GAFStruct</code> which contains all the alignment informations. If no
+/// alignment is found (because of the threshold), an empty <code>GAFStruct</code> is returned.
 pub fn wf_pathwise_alignment_end_free_global(
     sequence: &[char],
     path_graph: &PathGraph,
@@ -305,6 +335,7 @@ pub fn wf_pathwise_alignment_end_free_global(
     ins: usize,
     del: usize,
     max_threads: Option<usize>,
+    score_threshold: Option<usize>,
 ) -> GAFStruct {
 
     let mut optimal_alignments = Vec::new();
@@ -314,31 +345,41 @@ pub fn wf_pathwise_alignment_end_free_global(
     let parallelize_match = false;
     let uint_type = choose_uint_size(path_graph, sequence);
     let max_delta_allowed = choose_max_delta_allowed(&graph, sequence, AlignmentMod::EndFreeGlobal);
-
     let find_all_alignments = false;
 
     let _d = match uint_type {
         8 => wf_align::<u8>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::EndFreeGlobal, parallelize_match, 
-            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, max_threads),
+            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, 
+            max_threads, score_threshold),
         16 => wf_align::<u16>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::EndFreeGlobal, parallelize_match, 
-            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, max_threads),
+            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, 
+            max_threads, score_threshold),
         32 => wf_align::<u32>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::EndFreeGlobal, parallelize_match, 
-            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, max_threads),
+            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, 
+            max_threads, score_threshold),
         64 => wf_align::<u64>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::EndFreeGlobal, parallelize_match, 
-            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, max_threads),
+            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, 
+            max_threads, score_threshold),
         128 => wf_align::<u128>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::EndFreeGlobal, parallelize_match, 
-            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, max_threads), 
+            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, 
+            max_threads, score_threshold), 
         _ => wf_align::<usize>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::EndFreeGlobal, parallelize_match, 
-            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, max_threads),
+            max_delta_allowed, prune_condition_semiglobal, find_all_alignments, 
+            max_threads, score_threshold),
     };
 
-    alignment_to_gaf_struct(sequence, path_graph, &optimal_alignments[0])
+    if optimal_alignments.len() > 0 {
+        alignment_to_gaf_struct(sequence, path_graph, &optimal_alignments[0])
+    }
+    else {
+        GAFStruct::new()
+    }
 }
 
 /// Runs **multiple threads WFA** to provide a **start free global optimal alignment** between a 
@@ -351,8 +392,11 @@ pub fn wf_pathwise_alignment_end_free_global(
 /// - <code>del</code>: **deletion penalty**;
 /// - <code>max_threads</code>: max number of **threads running in parallel** (<code>None</code>
 /// for using all threads avaibles).
+/// - <code>score_threshold</code>: max score before abandone an alignment (<code>None</code>
+/// to not set a threshold).
 /// # Return value
-/// Returns a <code>GAFStruct</code> which contains all the alignment informations.
+/// Returns a <code>GAFStruct</code> which contains all the alignment informations. If no
+/// alignment is found (because of the threshold), an empty <code>GAFStruct</code> is returned.
 pub fn wf_pathwise_alignment_start_free_global(
     sequence: &[char],
     path_graph: &PathGraph,
@@ -361,6 +405,7 @@ pub fn wf_pathwise_alignment_start_free_global(
     ins: usize,
     del: usize,
     max_threads: Option<usize>,
+    score_threshold: Option<usize>,
 ) -> GAFStruct {
 
     let mut optimal_alignments = Vec::new();
@@ -370,30 +415,34 @@ pub fn wf_pathwise_alignment_start_free_global(
     let parallelize_match = false;
     let uint_type = choose_uint_size(path_graph, sequence);
     let max_delta_allowed = choose_max_delta_allowed(&graph, sequence, AlignmentMod::StartFreeGlobal);
-
     let find_all_alignments = false;
 
     let _d = match uint_type {
         8 => wf_align::<u8>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::StartFreeGlobal, parallelize_match, 
-            max_delta_allowed, prune_condition_global, find_all_alignments, max_threads),
+            max_delta_allowed, prune_condition_global, find_all_alignments, max_threads, score_threshold),
         16 => wf_align::<u16>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::StartFreeGlobal, parallelize_match, 
-            max_delta_allowed, prune_condition_global, find_all_alignments, max_threads),
+            max_delta_allowed, prune_condition_global, find_all_alignments, max_threads, score_threshold),
         32 => wf_align::<u32>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::StartFreeGlobal, parallelize_match, 
-            max_delta_allowed, prune_condition_global, find_all_alignments, max_threads),
+            max_delta_allowed, prune_condition_global, find_all_alignments, max_threads, score_threshold),
         64 => wf_align::<u64>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::StartFreeGlobal, parallelize_match, 
-            max_delta_allowed, prune_condition_global, find_all_alignments, max_threads),
+            max_delta_allowed, prune_condition_global, find_all_alignments, max_threads, score_threshold),
         128 => wf_align::<u128>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::StartFreeGlobal, parallelize_match, 
-            max_delta_allowed, prune_condition_global, find_all_alignments, max_threads), 
+            max_delta_allowed, prune_condition_global, find_all_alignments, max_threads, score_threshold), 
         _ => wf_align::<usize>(&graph, sequence, &mut optimal_alignments, m, ins, del, 
             wf_implementation, AlignmentMod::StartFreeGlobal, parallelize_match, 
-            max_delta_allowed, prune_condition_global, find_all_alignments, max_threads),
+            max_delta_allowed, prune_condition_global, find_all_alignments, max_threads, score_threshold),
     };
 
-    alignment_to_gaf_struct(sequence, path_graph, &optimal_alignments[0])
+    if optimal_alignments.len() > 0 {
+        alignment_to_gaf_struct(sequence, path_graph, &optimal_alignments[0])
+    }
+    else {
+        GAFStruct::new()
+    }
 }
 

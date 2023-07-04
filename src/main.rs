@@ -266,8 +266,8 @@ fn main() {
             let mut part_elapsed = 0;
             let mut last_partial;
             let (m, ins, del) = (1, 1, 1);
-            let max_threads = Some(3);
-
+            let max_threads = None;
+            let threshold = None;
             let mut times = vec![];
 
             let string_graph = &wfa::path_graph_to_path_strings(&graph); 
@@ -300,10 +300,6 @@ fn main() {
 
             if recgraph_mod {
                 for (i, seq) in sequences.iter().enumerate() {
-                    if i == 100 {
-                        break;
-                    }
-
                     if print_status {
                         eprint!("Processing {}/{} ({:.1}%) -> ", 
                                 i + 1, sequences.len(),
@@ -331,10 +327,6 @@ fn main() {
             }
             else {
                 for (i, seq) in sequences.iter().enumerate() {
-                    if i == 100 {
-                        break;
-                    }
-
                     if print_status {
                         eprint!("Processing {}/{} ({:.1}%) -> ", 
                                 i + 1, sequences.len(),
@@ -349,6 +341,7 @@ fn main() {
                         ins, 
                         del,
                         max_threads,
+                        threshold,
                     );
                     gaf.query_name = seq_names[i].clone();
                     utils::write_gaf(&gaf.to_string(), i);
@@ -378,11 +371,13 @@ fn main() {
                 statistical::mean(
                     &(times.iter().map(|x| *x as f64 / 1000.0).collect::<Vec<f64>>()), 
                 ));
-                eprintln!("SD time for alignment: {:.1} s", 
-                statistical::standard_deviation(
-                    &(times.iter().map(|x| *x as f64 / 1000.0).collect::<Vec<f64>>()), 
-                    None
-                ));
+                if times.len() > 1 {
+                    eprintln!("SD time for alignment: {:.1} s", 
+                    statistical::standard_deviation(
+                        &(times.iter().map(|x| *x as f64 / 1000.0).collect::<Vec<f64>>()), 
+                        None
+                    ));
+                }
                 let mut max = 0;
                 let mut min = times[0];
                 for time in times {
@@ -410,6 +405,7 @@ fn main() {
             let mut last_partial;
 	        let (m, ins, del) = (1, 1, 1);
             let max_threads = None;
+            let threshold = None;
             let mut times = vec![];
 
             let string_graph = &wfa::path_graph_to_path_strings(&graph); 
@@ -442,10 +438,6 @@ fn main() {
 
             if recgraph_mod {
                 for (i, seq) in sequences.iter().enumerate() {
-                    if i == 100 {
-                        break;
-                    }
-
                     if print_status {
                         eprint!("Processing {}/{} ({:.1}%) -> ", 
                                 i + 1, sequences.len(),
@@ -474,10 +466,6 @@ fn main() {
             }
             else {
                 for (i, seq) in sequences.iter().enumerate() {
-                    if i == 100 {
-                        break;
-                    }
-
                     if print_status { 
                         eprint!("Processing {}/{} ({:.1}%) -> ", 
                                 i + 1, sequences.len(),
@@ -491,7 +479,8 @@ fn main() {
                         m, 
                         ins, 
                         del,
-                        max_threads
+                        max_threads,
+                        threshold,
                     );
                     gaf.query_name = seq_names[i].clone();
                     utils::write_gaf(&gaf.to_string(), i);
@@ -520,11 +509,13 @@ fn main() {
                 statistical::mean(
                     &(times.iter().map(|x| *x as f64 / 1000.0).collect::<Vec<f64>>()), 
                 ));
-                eprintln!("SD time for alignment: {:.1} s", 
-                statistical::standard_deviation(
-                    &(times.iter().map(|x| *x as f64 / 1000.0).collect::<Vec<f64>>()), 
-                    None
-                ));
+                if times.len() > 1 {
+                    eprintln!("SD time for alignment: {:.1} s", 
+                    statistical::standard_deviation(
+                        &(times.iter().map(|x| *x as f64 / 1000.0).collect::<Vec<f64>>()), 
+                        None
+                    ));
+                }
                 let mut max = 0;
                 let mut min = times[0];
                 for time in times {

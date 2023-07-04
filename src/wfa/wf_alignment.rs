@@ -1003,9 +1003,9 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 /// - <code>d</code>: the **best alignment score**
 /// ## Time
 /// The alignment to each path is performed by a different **thread** which stops when 
-/// the best solution is found; consequentially, assuming every **thread running in parallel** (for a low
-/// number of path), the **time complexity** is <code>O(max{n, m} d)</code>. Otherwise, considering an 
-/// arbitrary number of paths, the **time complexity** becomes <code>O(p max{n, m} d)</code>.
+/// the best solution is found; consequentially, assuming every **thread running in parallel** (for a 
+/// number of path similar to CPU cores), the **time complexity** is <code>O(max{n, m} d)</code>. 
+/// Otherwise, considering an arbitrary number of paths, the **time complexity** becomes <code>O(p max{n, m} d)</code>.
 /// ## Space
 /// The **space complexity** depends on the wavefront implementation chosen; however, for each implementation,
 /// in the **worst case** every diagonal is stored in the wavefront for **every score** lower than the 
@@ -1024,11 +1024,12 @@ pub fn wf_align<T>(
     prune_condition: fn(&PathStrings, &[char], usize, usize, usize, usize) -> bool,
     find_all_alignments: bool,
     maybe_max_threads: Option<usize>,
+    maybe_score_threshold: Option<usize>,
 ) -> usize 
 where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 
     let mut threads_alignments: Vec<Alignment> = Vec::with_capacity(graph.paths_number);
-    let maybe_max_score = None;
+    let maybe_max_score = maybe_score_threshold;
     let maybe_max_score_mutex = Arc::new(Mutex::new(maybe_max_score));
 
     let max_threads = maybe_max_threads.unwrap_or(graph.paths_number);
