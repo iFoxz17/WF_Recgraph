@@ -82,7 +82,7 @@ where T: num::NumCast + Copy {
     }
 
     fn set_low_diagonal(&mut self, diagonal: isize) -> bool {
-        if diagonal >= - as_isize(self.min_diagonal) && diagonal <= as_isize(self.high_diagonal) {
+        if diagonal >= self.get_min_diagonal() && diagonal <= self.get_high_diagonal() {
             self.low_diagonal = from_isize::<T>(-diagonal);
             true
         }
@@ -92,7 +92,7 @@ where T: num::NumCast + Copy {
     }
 
     fn set_high_diagonal(&mut self, diagonal: isize) -> bool {
-        if diagonal >= - as_isize(self.low_diagonal) && diagonal <= as_isize(self.max_diagonal) {
+        if diagonal >= self.get_low_diagonal() && diagonal <= self.get_max_diagonal() {
             self.high_diagonal = from_isize::<T>(diagonal);
             true
         }
