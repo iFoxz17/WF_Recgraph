@@ -8,6 +8,18 @@ pub trait Wavefront {
     /// Returns the hypothetical **major diagonal** <code>(sequence.len() - 1)</code>. 
     fn get_max_diagonal(&self) -> isize;
 
+    /// Returns the actual **minor diagonal** computed. 
+    fn get_low_diagonal(&self) -> isize;
+
+    /// Returns the actual **major diagonal** computed. 
+    fn get_high_diagonal(&self) -> isize;
+
+    /// Sets the actual **minor diagonal** computed. 
+    fn set_low_diagonal(&mut self, diagonal: isize) -> bool;
+
+    /// Sets the actual **major diagonal** computed. 
+    fn set_high_diagonal(&mut self, diagonal: isize) -> bool;
+
     /// Returns the **offset** of <code>diagonal</code> (if exists).
     fn get_diagonal_offset(&self, diagonal: isize) -> Option<usize>;
 

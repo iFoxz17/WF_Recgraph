@@ -265,8 +265,8 @@ fn main() {
             let print_status = true;
             let mut part_elapsed = 0;
             let mut last_partial;
-            let (m, ins, del) = (1, 1, 1);
-            let max_threads = None;
+            let (m, ins, del) = (3, 5, 7);
+            let max_threads = Some(3);
             let threshold = None;
             let mut times = vec![];
 
@@ -327,6 +327,7 @@ fn main() {
             }
             else {
                 for (i, seq) in sequences.iter().enumerate() {
+ 
                     if print_status {
                         eprint!("Processing {}/{} ({:.1}%) -> ", 
                                 i + 1, sequences.len(),
@@ -404,7 +405,7 @@ fn main() {
             let mut part_elapsed = 0;
             let mut last_partial;
 	        let (m, ins, del) = (1, 1, 1);
-            let max_threads = None;
+            let max_threads = Some(1);
             let threshold = None;
             let mut times = vec![];
 

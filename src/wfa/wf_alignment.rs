@@ -1,5 +1,3 @@
-extern crate queues;
-
 use crate::wfa::wavefront::*;
 use crate::wfa::wf_implementation::*;
 use crate::wfa::wf_implementation::wf_vec::*;
@@ -9,9 +7,7 @@ use std::thread;
 use std::sync::{Arc, Mutex};
 use std::sync::mpsc;
 
-use std::collections::HashSet;
 use std::hash::Hash;
-use queues::*;
 
 /// **Multiple string rapresentation** of the **graph**; <code>lnz</code> contains the linearization of 
 /// the graph, while every path is mapped in <code>lnz</code> by <code>paths_mapping</code>. 
@@ -141,7 +137,6 @@ impl WavefrontSet {
 pub struct PathWavefronts {
     path: usize,
     wavefronts: WavefrontSet,
-    diagonals_queue: Queue<(usize, isize)>,
 }
 
 impl PathWavefronts {
@@ -149,7 +144,7 @@ impl PathWavefronts {
     fn new<T>(
         path: usize, 
         min_diagonal: isize, 
-        max_diagonal: usize, 
+        max_diagonal: usize,
         wavefront_impl: WavefrontImpl,
         diagonals_number: usize,
         max_penalty: usize
@@ -160,7 +155,6 @@ impl PathWavefronts {
             wavefronts: WavefrontSet::new::<T>(
                 min_diagonal, max_diagonal, wavefront_impl, diagonals_number, max_penalty
             ),
-            diagonals_queue: Queue::new(),
         }
     }
 }
@@ -357,7 +351,9 @@ fn set_base_case(
             .unwrap()
             .set_diagonal_offset(0, 0);
 
-            path_wavefronts.diagonals_queue.add((0, 0)).unwrap();
+            let wavefront = path_wavefronts.wavefronts.get_wavefront(0).unwrap(); 
+            wavefront.set_low_diagonal(0);
+            wavefront.set_high_diagonal(0);
         },
         
         AlignmentMod::Semiglobal | AlignmentMod::StartFreeGlobal=> {
@@ -366,8 +362,11 @@ fn set_base_case(
                 .get_wavefront(0)
                 .unwrap()
                 .set_diagonal_offset(-(j as isize), 0);
-                path_wavefronts.diagonals_queue.add((0, -(j as isize))).unwrap(); 
-            } 
+            }
+
+            let wavefront = path_wavefronts.wavefronts.get_wavefront(0).unwrap();
+            wavefront.set_low_diagonal(-(graph.get_path_length(path_wavefronts.path) as isize) + 1);
+            wavefront.set_high_diagonal(0); 
         },
     }
 }
@@ -457,8 +456,6 @@ fn extend_with_threads(
     path_wavefronts: &mut PathWavefronts,
     score: usize
 ) {
-    let queue = &mut path_wavefronts.diagonals_queue;
-    let mut mem_queue = Queue::new();
     let wavefront = path_wavefronts.wavefronts.get_wavefront(score).unwrap();
 
     thread::scope(|s| {
@@ -467,10 +464,8 @@ fn extend_with_threads(
         let (tx, rx) = mpsc::channel();
         let path = path_wavefronts.path;
 
-        while (*queue).size() > 0 {    
-            let (penalty, k) = queue.remove().unwrap();
-            
-            if score == penalty {
+        for k in wavefront.get_low_diagonal()..=wavefront.get_high_diagonal() {            
+            if wavefront.exist(k) {
                 let i = wavefront.get_diagonal_offset(k).unwrap();
 
                 if thread_run_condition(sequence, graph, path, k, i) {
@@ -491,11 +486,7 @@ fn extend_with_threads(
                 else {
                     let increase = get_diagonal_match_count(sequence, graph, path_wavefronts.path, k, i);
                     wavefront.set_diagonal_offset(k, i + increase); 
-                    mem_queue.add((penalty, k)).unwrap();
                 }
-            }
-            else {
-                mem_queue.add((penalty, k)).unwrap();
             }
         }
 
@@ -506,14 +497,11 @@ fn extend_with_threads(
                         k, 
                         wavefront.get_diagonal_offset(k).unwrap() + increase
                     );
-                    mem_queue.add((score, k)).unwrap();
                 },
                 Err(_) => (),
             }
             diagonals_to_extend -= 1;
         }
-
-        *queue = mem_queue;
     });
 }
 
@@ -523,24 +511,15 @@ fn extend_no_threads(
     path_wavefronts: &mut PathWavefronts,
     score: usize,
 ) {
-
-    let queue = &mut path_wavefronts.diagonals_queue;
-    let mut mem_queue = Queue::new();
     let wavefront = path_wavefronts.wavefronts.get_wavefront(score).unwrap();
 
-    while (*queue).size() > 0 {    
-        let (penalty, k) = queue.remove().unwrap();
-
-        if score == penalty {
+    for k in wavefront.get_low_diagonal()..=wavefront.get_high_diagonal() {            
+        if wavefront.exist(k) {
             let i = wavefront.get_diagonal_offset(k).unwrap();
             let increase = get_diagonal_match_count(sequence, graph, path_wavefronts.path, k, i);
             wavefront.set_diagonal_offset(k, i + increase);
         }
-
-        mem_queue.add((penalty, k)).unwrap();
     }
-
-    *queue = mem_queue;
 }
 
 #[inline(always)]
@@ -574,7 +553,6 @@ fn expand<T>(
     sequence: &[char], 
     graph: &PathStrings,
     path_wavefronts: &mut PathWavefronts,
-    mem_set: &mut HashSet<(usize, isize)>,
     score: usize,
     m: usize,
     ins: usize,
@@ -584,10 +562,6 @@ fn expand<T>(
 where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 
     let max_penalty = max(m, ins, del);
-
-    let queue = &mut path_wavefronts.diagonals_queue;
-    let mut mem_queue: Queue<(usize, isize)> = Queue::new();
-
     let mut next_wavefront;
 
     for _add in 1..=(score + max_penalty - path_wavefronts.wavefronts.get_max_score()) {
@@ -595,16 +569,18 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
             graph.get_min_diagonal(path_wavefronts.path),
             sequence.len() - 1,
             wavefront_impl,
-            (*queue).size(),
-            max_penalty
+            0,
+            max_penalty,
         );
     }
 
-    while (*queue).size() > 0 {                
-        let (penalty, k) = queue.remove().unwrap();
+    let low_diagonal = path_wavefronts.wavefronts.get_wavefront(score).unwrap().get_low_diagonal();
+    let high_diagonal = path_wavefronts.wavefronts.get_wavefront(score).unwrap().get_high_diagonal();
 
-        if penalty == score {
-            let wavefront = path_wavefronts.wavefronts.get_wavefront(score).unwrap();
+    for k in low_diagonal..=high_diagonal {
+
+        let wavefront = path_wavefronts.wavefronts.get_wavefront(score).unwrap();
+        if (*wavefront).exist(k) {
 
             let i = (*wavefront).get_diagonal_offset(k).unwrap();
             let v = (i as isize - k) as usize;
@@ -615,10 +591,12 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
                 if next_wavefront.get_diagonal_offset(k + 1).unwrap_or(0) < i + 1 {
                     next_wavefront.set_diagonal_offset(k + 1, i + 1);
                     next_wavefront.set_pred_diagonal(k + 1, k);
-
-                    if !mem_set.contains(&(score + ins, k + 1)) {
-                        mem_queue.add((score + ins, k + 1)).unwrap();
-                        mem_set.insert((score + ins, k + 1));
+                    
+                    if next_wavefront.get_low_diagonal() > k { 
+                        next_wavefront.set_low_diagonal(k);
+                    }
+                    if next_wavefront.get_high_diagonal() < k + 1 { 
+                        next_wavefront.set_high_diagonal(k + 1);
                     }
                 }
             }
@@ -628,12 +606,14 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 
                 if next_wavefront.get_diagonal_offset(k).unwrap_or(0) < i + 1 {
                     next_wavefront.set_diagonal_offset(k, i + 1);
-                    next_wavefront.set_pred_diagonal(k, k);
+                    next_wavefront.set_pred_diagonal(k, k); 
 
-                    if !mem_set.contains(&(score + m, k)) {
-                        mem_queue.add((score + m, k)).unwrap(); 
-                        mem_set.insert((score + m, k));
-                    } 
+                    if next_wavefront.get_low_diagonal() > k { 
+                        next_wavefront.set_low_diagonal(k);
+                    }
+                    if next_wavefront.get_high_diagonal() < k { 
+                        next_wavefront.set_high_diagonal(k);
+                    }
                 }
             }
 
@@ -645,20 +625,16 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
                     next_wavefront.set_diagonal_offset(k - 1, i);
                     next_wavefront.set_pred_diagonal(k - 1, k);
 
-                    if !mem_set.contains(&(score + del, k - 1)) {
-                        mem_queue.add((score + del, k - 1)).unwrap();
-                        mem_set.insert((score + del, k - 1));
+                    if next_wavefront.get_low_diagonal() > k - 1 { 
+                        next_wavefront.set_low_diagonal(k - 1);
+                    }
+                    if next_wavefront.get_high_diagonal() < k { 
+                        next_wavefront.set_high_diagonal(k);
                     }
                 }
             }
-        }
-        else if !mem_set.contains(&(penalty, k)) {
-            mem_queue.add((penalty, k)).unwrap();
-            mem_set.insert((penalty, k));
-        }
+        } 
     }
-    *queue = mem_queue;
-    mem_set.clear();    
 }
 
 fn traceback( 
@@ -759,6 +735,7 @@ fn traceback(
     alignment
 }
 
+/*
 /// Sperimental for pruning heuristics. Peform the pruning in semiglobal mode.
 fn prune_semiglobal(
     path_wavefronts: &mut PathWavefronts,
@@ -874,6 +851,7 @@ fn prune(
             prune_global(path_wavefronts, score, max_delta_allowed),
     }
 }
+*/
 
 /// Perform the alignment between a **single path** of the **graph** and the **sequence**.
 fn wf_align_to_path<T>(
@@ -886,7 +864,7 @@ fn wf_align_to_path<T>(
     wavefront_impl: WavefrontImpl,
     modality: AlignmentMod,
     parallelize_match: bool,
-    max_delta_allowed: usize,
+    _max_delta_allowed: usize,
     prune_condition: fn(&PathStrings, &[char], usize, usize, usize, usize) -> bool,
     find_all_alignments: bool,
     maybe_max_score_mutex: Arc<Mutex<Option<usize>>>,
@@ -904,10 +882,8 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 
     let max_penalty = max(m, ins, del);
 
-    let mut mem_set: HashSet<(usize, isize)> = HashSet::new();
-
     let final_diagonal : isize;
-    let mut diagonals_pruned = 0;
+    let diagonals_pruned = 0;
 
     set_base_case(graph, &mut path_wavefronts, modality);
 
@@ -932,11 +908,11 @@ where T: num::NumCast + std::cmp::Eq + Hash + Copy + 'static {
 
         //Sperimental for pruning heuristics
         
-        if prune_condition(graph, sequence, path, path_wavefronts.diagonals_queue.size(), max_penalty, d) {
-            diagonals_pruned += prune(&mut path_wavefronts, d, modality, max_delta_allowed);
+        if prune_condition(graph, sequence, path, 0, max_penalty, d) {
+            //diagonals_pruned += prune(&mut path_wavefronts, d, modality, max_delta_allowed);
         }        
         
-        expand::<T>(sequence, graph, &mut path_wavefronts, &mut mem_set, d, m, ins, del, wavefront_impl);
+        expand::<T>(sequence, graph, &mut path_wavefronts, d, m, ins, del, wavefront_impl);
 
         d += 1;
     }

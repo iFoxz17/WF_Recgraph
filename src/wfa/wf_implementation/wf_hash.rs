@@ -7,6 +7,8 @@ use std::hash::Hash;
 pub struct WavefrontHash<T> {
     min_diagonal: T,
     max_diagonal: T,
+    low_diagonal: T,
+    high_diagonal: T,
     offsets: HashMap<T, T>,
     pred_diagonal: HashMap<T, T>,
 }
@@ -27,6 +29,8 @@ where T: num::NumCast + Copy {
         WavefrontHash {
             min_diagonal: new_min_diagonal, 
             max_diagonal: from_usize::<T>(max_diagonal),
+            low_diagonal: from_usize::<T>(0), 
+            high_diagonal: from_usize::<T>(0),
             offsets: HashMap::new(),
             pred_diagonal: HashMap::new(),
         }
@@ -55,6 +59,36 @@ where T: num::NumCast + Copy + std::cmp::Eq + Hash + Copy {
     #[inline(always)]
     fn get_max_diagonal(&self) -> isize {
         as_isize(self.max_diagonal)
+    }
+
+    #[inline(always)]
+    fn get_low_diagonal(&self) -> isize {
+        - (as_isize(self.low_diagonal))
+    }
+
+    #[inline(always)]
+    fn get_high_diagonal(&self) -> isize {
+        as_isize(self.high_diagonal)
+    }
+
+    fn set_low_diagonal(&mut self, diagonal: isize) -> bool {
+        if diagonal >= - as_isize(self.min_diagonal) && diagonal <= as_isize(self.high_diagonal) {
+            self.low_diagonal = from_isize::<T>(-diagonal);
+            true
+        }
+        else {
+            false
+        }
+    }
+
+    fn set_high_diagonal(&mut self, diagonal: isize) -> bool {
+        if diagonal >= - as_isize(self.low_diagonal) && diagonal <= as_isize(self.max_diagonal) {
+            self.high_diagonal = from_isize::<T>(diagonal);
+            true
+        }
+        else {
+            false
+        }
     }
 
     fn get_diagonal_offset(&self, diagonal: isize) -> Option<usize> {
