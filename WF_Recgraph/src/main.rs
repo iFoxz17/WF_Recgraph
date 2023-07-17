@@ -265,8 +265,8 @@ fn main() {
             let print_status = true;
             let mut part_elapsed = 0;
             let mut last_partial;
-            let (m, ins, del) = (1, 2, 2);
-            let max_threads = Some(1);
+            let (m, ins, del) = (1, 1, 1);
+            let max_threads = None;
             let threshold = None;
             let mut times = vec![];
 
@@ -404,8 +404,8 @@ fn main() {
             let print_status = true;
             let mut part_elapsed = 0;
             let mut last_partial;
-	        let (m, ins, del) = (3, 9, 19);
-            let max_threads = Some(1);
+	        let (m, ins, del) = (1, 1, 1);
+            let max_threads = None;
             let threshold = None;
             let mut times = vec![];
 
