@@ -7,5 +7,5 @@ WF_Recgraph contains an optimizazion of [RecGraph](https://github.com/AlgoLab/Re
 
 ## Future improvements
 - Extend **weighted edit distance** to **gap pairwise alignment**;
-- Reduce memory complexity of ***wf_vec*** implementation to $O(d^2 \cdot p)$;
+- Reduce memory complexity of ***wf_vec*** implementation to $O(\overline{d}^2 \cdot p)$;
 - Implements ***wavefront heuristics***.
