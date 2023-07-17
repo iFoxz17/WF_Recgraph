@@ -1,0 +1,11 @@
+\chapter{Conclusioni e sviluppi futuri}
+    Il prototipo sviluppato dimostra a pieno le maggiori potenzialità dell'algoritmo \textbf{\textit{wavefront}} rispetto agli algoritmi di allineamento tradizionali, generando grandi risparmi sia in termini di \textbf{tempo} che in termini di \textbf{spazio} e permettendo di trattare istanze maggiori di diversi ordini di grandezza. Tuttavia, formalmente esso si basa sul calcolo della \textbf{distanza di edit} e non su un vero e proprio \textbf{allineamento}, producendo a volte risultati non in linea con quelli degli altri algoritmi; un importante futuro miglioramento è quindi sicuramente quello di estendere l'approccio \textbf{\textit{wavefront}} su \textbf{grafi di variazione} e \textbf{sequenze} per effettuare \emph{allineamenti con gap}\footnote{Una implementazione per i \textbf{grafi di sequenza} è già stata fornita nell'articolo \cite{wfa_gap_penalty}.}, che forniscono risultati più coerenti rispetto a quelli basati sulla \textbf{distanza di edit (pesata)}.   
+    
+    \vspace{10pt}
+    Inoltre, nell'articolo \cite{wfa_sequence_graph} viene presentata un'\textbf{euristica} di \textbf{\textit{WFA}} che permette di ottenere ottimi risparmi di tempo, al costo di non avere la certezza di trovare la \emph{soluzione ottima}: l'\textbf{euristica} si integra molto bene con l'algoritmo, rendendo necessarie relativamente poche modifiche per implementarla all'interno del prototipo.
+    
+    \vspace{10pt}
+    Infine, risulterebbe estremamente interessante riuscire a trovare un approccio che permetta di utilizzare l'algoritmo \textbf{\textit{wavefront}} su \textbf{grafi di variazione canonici} senza dover estrarre tutti i \textbf{percorsi} di quest'ultimi: un simile approccio permetterebbe di risparmiare grandi quantità di tempo dal calcolare più volte i valori per vertici appartenenti a diversi cammini (in maniera simile a quello che avviene in \textbf{\textit{RecGraph}}), rendendo tuttavia più complicato le computazioni in parallelo tramite \textbf{multithreading}.
+
+    \vspace{10pt}
+    In conclusione, l'\textbf{algoritmo \textit{wavefront}} rappresenta un'importante novità nell'ambito della \textbf{bionformatica}, che potrà portare a importanti miglioramenti in tutte le diverse applicazioni dell'\textbf{allineamento di sequenze}.  

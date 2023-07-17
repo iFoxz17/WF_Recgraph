@@ -1,0 +1,46 @@
+\documentclass[a4paper,12pt,oneside]{book}
+\usepackage[T1]{fontenc}
+%\usepackage[utf8]{inputenc}
+\usepackage[italian]{babel}
+\usepackage{hyperref}
+\usepackage{graphicx}
+\usepackage{wrapfig}
+\usepackage{makeidx}
+\usepackage[table]{}
+\usepackage{ragged2e}
+\usepackage{multirow}
+\usepackage{caption}
+\usepackage{floatrow}
+\usepackage{amssymb}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage[ruled,vlined]{algorithm2e}
+\usepackage[paper=a4paper,margin=1in]{geometry}
+
+\geometry{margin=1.8cm}
+
+\graphicspath{{./images/}}
+
+\begin{document}
+
+\frontmatter
+    \input{frontespizio}
+    \justifying
+    \input{chapters/0.1-abstract}
+
+\tableofcontents
+    
+\mainmatter
+    \input{chapters/1-introduction}
+    \input{chapters/2-alignment}
+    \input{chapters/3-wavefront}
+    \input{chapters/4-implementation}
+    \input{chapters/5-conclusion}
+
+    \bibliography{articles_stage, bwt}
+    \bibliographystyle{abbrv} 
+
+\backmatter
+    %\input{chapters/6-postfazione}
+    
+\end{document}

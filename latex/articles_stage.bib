@@ -1,0 +1,126 @@
+@book{Gusfield,
+  title           = {Algorithms on Strings, Trees and Sequences: {{Computer}}
+                  Science and Computational Biology},
+  author          = {Gusfield, Dan},
+  year            = 1997,
+  publisher       = {{Cambridge University Press}},
+  address         = {Cambridge},
+}
+
+@ARTICLE{WFA_edit-distance,
+  author={Aguado-Puig, Quim and Marco-Sola, Santiago and Moure, Juan Carlos and Castells-Rufas, David and Alvarez, Lluc and Espinosa, Antonio and Moreto, Miquel},
+
+  journal={IEEE Access}, 
+  title={Accelerating Edit-Distance Sequence Alignment on GPU Using the Wavefront Algorithm}, 
+  year={2022},
+  volume={10},
+  number={},
+  pages={63782-63796},
+  doi={10.1109/ACCESS.2022.3182714}
+}
+
+@misc{wfa_POA_extension,
+      title={Fast Exact String to D-Texts Alignments}, 
+      author={Njagi Moses Mwaniki and Erik Garrison and Nadia Pisanti},
+      year={2022},
+      eprint={2206.03242},
+      archivePrefix={arXiv},
+      primaryClass={cs.DS}
+}
+
+@article{UKKONEN1985100,
+title = {Algorithms for approximate string matching},
+journal = {Information and Control},
+volume = {64},
+number = {1},
+pages = {100-118},
+year = {1985},
+note = {International Conference on Foundations of Computation Theory},
+issn = {0019-9958},
+doi = {https://doi.org/10.1016/S0019-9958(85)80046-2},
+url = {https://www.sciencedirect.com/science/article/pii/S0019995885800462},
+author = {Esko Ukkonen},
+abstract = {The edit distance between strings a1 … am and b1 … bn is the minimum cost s of a sequence of editing steps (insertions, deletions, changes) that convert one string into the other. A well-known tabulating method computes s as well as the corresponding editing sequence in time and in space O(mn) (in space O(min(m, n)) if the editing sequence is not required). Starting from this method, we develop an improved algorithm that works in time and in space O(s · min(m, n)). Another improvement with time O(s · min(m, n)) and space O(s · min(s, m, n)) is given for the special case where all editing steps have the same cost independently of the characters involved. If the editing sequence that gives cost s is not required, our algorithms can be implemented in space O(min(s, m, n)). Since s = O(max(m, n)), the new methods are always asymptotically as good as the original tabulating method. As a by-product, algorithms are obtained that, given a threshold value t, test in time O(t · min(m, n)) and in space O(min(t, m, n)) whether s ⩽ t. Finally, different generalized edit distances are analyzed and conditions are given under which our algorithms can be used in conjunction with extended edit operation sets, including, for example, transposition of adjacent characters.}
+}
+
+@article{Eizenga_wfa,
+  title={Improving the time and space complexity of the WFA algorithm and generalizing its scoring},
+  author={Jordan M. Eizenga and Benedict J. Paten},
+  journal={bioRxiv},
+  year={2022}
+}
+
+@misc{wfa_sequence_graph,
+      title={Fast sequence to graph alignment using the graph wavefront algorithm}, 
+      author={Haowen Zhang and Shiqi Wu and Srinivas Aluru and Heng Li},
+      year={2022},
+      eprint={2206.13574},
+      archivePrefix={arXiv},
+      primaryClass={q-bio.GN}
+}
+
+@article{wfa_gap_penalty,
+    author = {Marco-Sola, Santiago and Moure, Juan Carlos and Moreto, Miquel and Espinosa, Antonio},
+    title = "{Fast gap-affine pairwise alignment using the wavefront algorithm}",
+    journal = {Bioinformatics},
+    volume = {37},
+    number = {4},
+    pages = {456-463},
+    year = {2020},
+    month = {09},
+    abstract = "{Pairwise alignment of sequences is a fundamental method in modern molecular biology, implemented within multiple bioinformatics tools and libraries. Current advances in sequencing technologies press for the development of faster pairwise alignment algorithms that can scale with increasing read lengths and production yields.In this article, we present the wavefront alignment algorithm (WFA), an exact gap-affine algorithm that takes advantage of homologous regions between the sequences to accelerate the alignment process. As opposed to traditional dynamic programming algorithms that run in quadratic time, the WFA runs in time O(ns), proportional to the read length n and the alignment score s, using O(s2) memory. Furthermore, our algorithm exhibits simple data dependencies that can be easily vectorized, even by the automatic features of modern compilers, for different architectures, without the need to adapt the code. We evaluate the performance of our algorithm, together with other state-of-the-art implementations. As a result, we demonstrate that the WFA runs 20–300× faster than other methods aligning short Illumina-like sequences, and 10–100× faster using long noisy reads like those produced by Oxford Nanopore Technologies.The WFA algorithm is implemented within the wavefront-aligner library, and it is publicly available at https://github.com/smarco/WFA.}",
+    issn = {1367-4803},
+    doi = {10.1093/bioinformatics/btaa777},
+    url = {https://doi.org/10.1093/bioinformatics/btaa777},
+    eprint = {https://academic.oup.com/bioinformatics/article-pdf/37/4/456/50359789/btaa777.pdf},
+}
+
+@article {Recgraph,
+	author = {Jorge Avila and Paola Bonizzoni and Simone Ciccolella and Gianluca Della Vedova and Luca Denti and Davide Monti and Yuri Pirola and Francesco Porto},
+	title = {RecGraph: adding recombinations to sequence-to-graph alignments},
+	elocation-id = {2022.10.27.513962},
+	year = {2022},
+	doi = {10.1101/2022.10.27.513962},
+	publisher = {Cold Spring Harbor Laboratory},
+	abstract = {The transition towards graph pangenomes is posing several new challenging questions, most notably how to extend the classical notion of read alignment from a sequence-to-sequence to a sequence-to-graph setting. Especially on variation graphs, where paths corresponding to individual genomes are labeled, notions of alignments that are strongly inspired by the classical ones are usually able to capture only variations that can be expressed by mismatches or gaps, such as SNPs or short insertions and deletions.On the other hand the recent investigation of pangenomes at bacterial scale (Colquhoun et al, 2021) shows that most tools are tailored for human pangenomes and are not suited to bacteria which exhibit, among other characteristics, a larger variability. Such variability leads to the need for incorporating a greater flexibility when computing an alignment.In this paper, we extend the usual notion of sequence-to-graph alignment by including recombinations among the variations that explicitly represented and evaluated in an alignment. From a computational modeling point of view, a recombination corresponds to identifying a new path of the variation graph which is a mosaic of two different paths, possibly joined by a new arc.We provide a dynamic programming algorithm for computing an optimal alignment that allows recombinations with an affine penalty. We have implemented our approach with the tool RecGraph and we have analyzed its accuracy over some over some bacterial pangenome graphs.Competing Interest StatementThe authors have declared no competing interest.},
+	URL = {https://www.biorxiv.org/content/early/2022/10/28/2022.10.27.513962},
+	eprint = {https://www.biorxiv.org/content/early/2022/10/28/2022.10.27.513962.full.pdf},
+	journal = {bioRxiv}
+}
+
+@article{POA,
+    author = {Lee, Christopher and Grasso, Catherine and Sharlow, Mark F.},
+    title = "{Multiple sequence alignment using partial order graphs }",
+    journal = {Bioinformatics},
+    volume = {18},
+    number = {3},
+    pages = {452-464},
+    year = {2002},
+    month = {03},
+    abstract = "{Motivation: Progressive Multiple Sequence Alignment (MSA) methods
+  depend on reducing an MSA to a linear profile for each alignment
+  step. However, this leads to loss of information needed for accurate
+  alignment, and gap scoring artifacts.Results: We present a graph representation of an MSA that can
+  itself be aligned directly by pairwise dynamic programming,
+  eliminating the need to reduce the MSA to a profile. This enables
+  our algorithm (Partial Order Alignment (POA)) to guarantee that the
+  optimal alignment of each new sequence versus each sequence in the
+  MSA will be considered. Moreover, this algorithm introduces a new
+  edit operator, homologous recombination, important for multidomain
+  sequences. The algorithm has improved speed (linear time complexity)
+  over existing MSA algorithms, enabling construction of massive and
+  complex alignments (e.g. an alignment of 5000 sequences in 4 h on a
+  Pentium II). We demonstrate the utility of this algorithm on a
+  family of multidomain SH2 proteins, and on EST assemblies containing
+  alternative splicing and polymorphism.Availability: The partial order alignment program POA is
+  available at http://www.bioinformatics.ucla.edu/poa.Contact: leec@mbi.ucla.edu*To whom correspondence should be
+  addressed.2Current address:
+  center for Applied Mathematics, 657 Rhodes Hall, Cornell University,
+  Ithaca NY 14853, USA.}",
+    issn = {1367-4803},
+    doi = {10.1093/bioinformatics/18.3.452},
+    url = {https://doi.org/10.1093/bioinformatics/18.3.452},
+    eprint = {https://academic.oup.com/bioinformatics/article-pdf/18/3/452/48850306/bioinformatics\_18\_3\_452.pdf},
+}
+
+

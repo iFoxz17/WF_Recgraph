@@ -1,0 +1,527 @@
+\documentclass{article}
+\usepackage{graphicx} % Required for inserting images
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{todonotes}
+\newcommand{\gdv}[1]{\todo[backgroundcolor=yellow]{\textbf{GDV} #1}}
+
+\title{stage-wavefront}
+\author{Mattia Volpato}
+\date{April 2023}
+
+\begin{document}
+
+\maketitle
+
+\section{Edit distance}
+
+\subsection{Wavefront:}
+\begin{equation}
+    \Tilde{H}_{d,v,k} = \begin{cases}
+        max\{j \mid H_{k+j,v,j} = d\}, & \text{if } \exists j \text{ s.t. } H_{k+j,v,j} = d \\
+        \infty, & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+\text{$H_{i,v,j,k}$ is the \textbf{furthest offset} on \textbf{diagonal} $(v, k)$ among DP cells with \textbf{edit distance} $d$.}
+
+\subsection{Match-mismatch scoring:}
+\begin{equation}
+    \Delta_{i,v,j} = \begin{cases}
+        0, & \text{if $$q[i] = v[j]$$} \\
+        1, & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+\subsection{Standard alignment}
+\begin{equation}
+    H_{i,v,j} = min \begin{cases}
+        H_{i-1,v,j} + 1, & i \ge 1 \\
+        H_{i,v,j-1} + 1, & j \ge 1 \\
+        H_{i-1,v,j-1} + \Delta_{i,v,j}, & i\ge1, j\ge1 \\
+        H_{i,u,\lvert{u}\rvert}, & j=0, \forall u \text{ s.t. } (u, v) \in E
+    \end{cases}
+\end{equation}
+
+\subsection{Wavefront expansion}
+\begin{equation}
+    \Tilde{J}_{d,v,k} = max \begin{cases}
+        \Tilde{H}_{d-1,v,k-1}, \\
+        \Tilde{H}_{d-1,v,k+1} + 1, \\
+        \Tilde{H}_{d-1,v,k} + 1, \\
+        0, & \exists u \text{ s.t. } (u, v) \in E, \Tilde{H}_{d,u,k - \lvert u \rvert} = \lvert u\rvert
+    \end{cases}
+\end{equation} 
+
+\subsection{Wavefront extension}
+\begin{equation}
+    \Tilde{H}_{d,v,k} = j + LCP(q[j + k + 1, \lvert q \rvert], v[j + 1, \lvert v \rvert])
+\end{equation}
+
+$$j = \Tilde{J}_{d,v,k}$$
+\\
+
+\section{General mismatch and indel penalty extension}
+
+\subsection{Wavefront:}
+\begin{equation}
+    \Tilde{H}_{d,v,k} = \begin{cases}
+        max\{j \mid H_{k+j,v,j} = d\}, & \text{if } \exists j \text{ s.t. } H_{k+j,v,j} = d \\
+        -\infty, & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+\text{$H_{i,v,j,k}$ is the \textbf{furthest offset} on \textbf{diagonal} $(v, k)$ among DP cells with \textbf{alignment penalty} $d$.}
+
+\subsection{Match-mismatch scoring:}
+\begin{equation}
+    \Delta_{i,v,j} = \begin{cases}
+        0, & \text{if $$q[i] = v[j]$$} \\
+        m, & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+\subsection{Standard alignment:}
+\begin{equation}
+    H_{i,v,j} = min \begin{cases}
+        H_{i-1,v,j} + g, & i \ge 1 \\
+        H_{i,v,j-1} + g, & j \ge 1 \\
+        H_{i-1,v,j-1} + \Delta_{i,v,j}, & i\ge1, j\ge1 \\
+        H_{i,u,\lvert{u}\rvert}, & j=0, \forall u \text{ s.t. } (u, v) \in E
+    \end{cases}
+\end{equation}
+
+\subsection{Wavefront expansion:}
+\begin{equation}
+    \Tilde{J}_{d,v,k} = max \begin{cases}
+        \Tilde{H}_{d-g,v,k-1}, & d \ge g\\
+        \Tilde{H}_{d-g,v,k+1} + 1, & d \ge g\\
+        \Tilde{H}_{d-m,v,k} + 1, & d \ge m\\
+        0, & \exists u \text{ s.t. } (u, v) \in E, \Tilde{H}_{d,u,k - \lvert u \rvert} = \lvert u\rvert
+    \end{cases}
+\end{equation}
+
+\subsection{Wavefront extension:}
+\begin{equation}
+    \Tilde{H}_{d,v,k} = j + LCP(q[j + k + 1, \lvert q \rvert], v[j + 1, \lvert v \rvert])
+\end{equation}
+
+$$j = \Tilde{J}_{d,v,k}$$
+
+\subsection{Where:}
+$$m > 0 \text{ is the } \textbf{mismatch penalty};$$
+$$g > 0 \text{ is the } \textbf{indel penalty}$$
+
+\section{Variation graph extension}
+
+\subsection{Wavefront:}
+\begin{equation}
+    \Tilde{H}_{d,v,k,p} = \begin{cases}
+        max\{j \mid H_{k+j,v,j,p} = d\}, & \text{if } v \in p, \exists j \text{ s.t. } H_{k+j,v,j,p} = d \\
+        -\infty & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+\text{$H_{i,v,j,k}$ is the \textbf{furthest offset} on \textbf{diagonal} $(v, k)$ among DP cells with \textbf{alignment penalty} $d$ on \textbf{path} $p$.}
+
+\subsection{Match-mismatch scoring:}
+\begin{equation}
+    \Delta_{i,v,j} = \begin{cases}
+        0, & \text{if $$q[i] = v[j]$$} \\
+        m, & \text{otherwise}
+    \end{cases}
+\end{equation}
+
+\subsection{Standard alignment:}
+\begin{equation}
+    H_{i,v,j,p} = \begin{cases} 
+        min \begin{cases}
+            H_{i-1,v,j,p} + g, & i \ge 1 \\
+            H_{i,v,j-1,p} + g, & j \ge 1 \\
+            H_{i-1,v,j-1,p} + \Delta_{i,v,j}, & i\ge1, j\ge1 \\
+            H_{i,u,\lvert{u}\rvert,p}, & j=0, \forall u \text{ s.t. } (u, v) \in E
+        \end{cases} & \text{ if } v \in p \\
+        +\infty, & otherwise
+    \end{cases}
+\end{equation}
+
+\subsection{Wavefront expansion:}
+\begin{equation}
+\Tilde{J}_{d,v,k,p} = max \begin{cases}
+    \Tilde{H}_{d-g,v,k-1,p}, & d \ge g\\
+    \Tilde{H}_{d-g,v,k+1,p} + 1, & d \ge g\\
+    \Tilde{H}_{d-m,v,k,p} + 1, & d \ge m\\
+    0, & \exists u \text{ s.t. } (u, v) \in E, \Tilde{H}_{d,u,k - \lvert u \rvert, p} = \lvert u\rvert
+\end{cases}
+\end{equation}
+
+\subsection{Wavefront extension:}
+    \begin{equation}
+    \Tilde{H}_{d,v,k,p} = j + LCP(q[j + k + 1, \lvert q \rvert], v[j + 1, \lvert v \rvert])
+\end{equation}
+
+$$j = \Tilde{J}_{d,v,k,p}$$
+
+\subsection{Where:}
+$$m > 0 \text{ is the } \textbf{mismatch penalty;}$$
+$$g > 0 \text{ is the } \textbf{indel penalty;}$$
+
+\section{Canonical variation graph reduction}
+    
+    \subsection{Wavefront:}
+    \begin{equation}
+        \Tilde{H}_{d,v,k,p} = \begin{cases}
+            max\{j \mid H_{k+j,v,j,p} = d\}, & \text{if } v \in p, \exists j \text{ s.t. } H_{k+j,v,j,p} = d \\
+            -\infty, & \text{otherwise}
+        \end{cases}
+    \end{equation}
+
+    $$\Tilde{H}_{d,v,k,p} \in \{0, 1, -\infty\}$$
+    \text{$H_{i,v,j,k}$ is the \textbf{furthest offset} on \textbf{diagonal} $(v, k)$ among DP cells with \textbf{alignment penalty} $d$ on \textbf{path} $p$.}
+    
+    \subsection{Match-mismatch scoring:}
+    \begin{equation}
+        \Delta_{i,v} = \begin{cases}
+            0, & \text{if $q[i] = \delta(v)$} \\
+            m, & \text{otherwise}
+        \end{cases}
+    \end{equation}
+    
+    \subsection{Standard alignment:}
+    \begin{equation}
+        H_{i,v,j,p} = \begin{cases}
+            + \infty & \text{if } v \notin p
+        \end{cases}
+    \end{equation}
+
+    \begin{equation}
+        H_{i,v,0,p} = min \begin{cases}
+            H_{i-1,v,0,p} + g, & i \ge 1 \\
+            H_{i,u,1,p}, & \forall u \text{ s.t. } (u, v) \in E
+        \end{cases}
+    \end{equation}
+    
+
+    \begin{equation}
+        H_{i,v,1,p} = min \begin{cases}
+            H_{i-1,v,1,p} + g & i \ge 1 \\
+            H_{i,v,0,p} + g \\
+            H_{i-1,v,0,p} + \Delta_{i,v} & i\ge 1 
+        \end{cases}
+    \end{equation}
+
+    \subsection{Wavefront expansion:}
+    \begin{equation}
+        \Tilde{J}_{d,v,k,p} = max \begin{cases}
+            \Tilde{H}_{d-g,v,k-1,p}, & d \ge g\\
+            \Tilde{H}_{d-g,v,k+1,p} + 1, & d \ge g\\
+            \Tilde{H}_{d-m,v,k,p} + 1, & d \ge m\\
+            0, & \exists u \text{ s.t. } (u, v) \in E, \Tilde{H}_{d,u,k - 1,p} = 1
+        \end{cases}
+    \end{equation}
+
+    $$\Tilde{J}_{d,v,k,p} \in \{0, 1, -\infty\}$$
+
+    \subsection{Wavefront extension:}
+    \begin{equation}
+        \Tilde{H}_{d,v,k,p} = j + \tau_{i+1, v} 
+    \end{equation}
+    $$j = \Tilde{J}_{d,v,k,p}$$
+    $$i = k + j$$
+    $$\tau_{i,v} = \begin{cases}
+        1, & \text{if } q[i] = \delta(v) \\
+        0, & otherwise
+    \end{cases}$$
+
+    \subsection{Where:}
+    $$m > 0 \text{ is the } \textbf{mismatch penalty};$$
+    $$g > 0 \text{ is the } \textbf{indel penalty;}$$
+    $$\delta(v) \in \Sigma \text{ is the \textbf{label} of node } v$$
+
+\section{WFA application to canonical variation graphs}
+\subsection{Instance} 
+    $$G = (V, E, P, \delta) \text{ canonical variation graph}$$
+    $$q[1..m] \text{ query read}$$
+    $$O = <v_s=v_1, v_2, ..., v_n=v_t> \text{ topological order of } V$$
+    $$\delta : V \rightarrow \Sigma \text{ labeling function}$$
+    $$P = <p_1, p_2, ..., p_k> \text{ source to terminal paths}$$
+    $$p_i = <v_s, v_{i_1}, v_{i_2}, ..., v_t> \text{ i-th path}$$ 
+    $$m > 0 \text{ mismatch penalty }$$
+    $$g > 0 \text{ indel penalty}$$
+
+\subsection{Definitions}
+
+\begin{itemize}
+
+    \item Let
+        \begin{itemize}
+            \item $v_j = j$
+            \item $k = i - v$ diagonal
+            \item $q[:i] = q[0]q[1]...q[i] \text{ the i-prefix of } q$ 
+        \end{itemize}  
+    
+    \item Match-mismatch penalty:
+        \begin{equation}
+            \Delta_{i, v} = \begin{cases}
+                m & \textit{if } q[i] = \delta(v) \\
+                0 & otherwise
+                
+            \end{cases}
+        \end{equation}
+    
+    \item Standard alignment:
+        \begin{equation}
+            H_{i, v, p} = min \begin{cases}
+                H_{i-1, u, p} + \Delta_{i, v} \\
+                H_{i-1, v, p} + g \\
+                H_{i, u, p} + g \\
+            \end{cases} \forall (u,v) \in E
+        \end{equation}
+
+    \item Wavefront:
+        \begin{equation}
+            \Tilde{H}_{d,k,p} = \begin{cases}
+                max\{i \mid H_{i,v,p} = d \} & \text{if } \exists i \text{ s.t. } H_{i,v,p} = d \\
+                - \infty & otherwise
+            \end{cases}    
+        \end{equation}
+
+        $\Tilde{H}_{d,k,p}$ is the furthest offset on diagonal $k = i - v$ among DP cells with alignment penalty $d$ on path $p$.        
+\end{itemize}
+
+\subsection{Base case:}
+$$\Tilde{H}_{0, v_s, p} = 0, \forall p \in P$$
+
+\subsection{Recursion}
+\begin{itemize}
+    \item 1: 
+    $\forall p \in P: $ \\
+    $\forall <u, v> \in p:$ \\
+    \text{Let} $ i = \Tilde{H}_{d, u, p}$ 
+    
+    \begin{itemize}
+        \item $\delta(v) = q[i+1]$
+            \begin{equation}
+                \Tilde{H}_{d,k - (v-u-1), p} = \Tilde{H}_{d,k,p} + 1
+            \end{equation}
+            
+        \item $\delta(v) \neq q[i+1]$
+            \begin{equation}
+                \Tilde{H}_{d,k - (v-u-1), p} = max \begin{cases}
+                    \Tilde{H}_{d-g, k - (v-u-1) - 1, p} + 1\\
+                    \Tilde{H}_{d-m, k, p} + 1 \\
+                    \Tilde{H}_{d-g, k + 1, p}
+                \end{cases}
+            \end{equation}
+    \end{itemize}
+
+    \item 2: 
+    \begin{equation}
+        \Tilde{H}_{d,k,p} = \begin{cases}
+             \Tilde{H}_{d,k+(v-u-1),p} + 1, & \textit{if } \delta(v) = q[i+1] \\
+             max \begin{cases}
+                \Tilde{H}_{d-g, k-1, p} + 1\\
+                \Tilde{H}_{d-m, k + (v-u-1), p} + 1\\
+                \Tilde{H}_{d-g, k + (v-u-1) + 1, p}
+            \end{cases} & \textit{if } \delta(v) \neq q[i + 1]
+        \end{cases}
+    \end{equation}
+
+    $\forall p \in P,$ \\ 
+    $\forall <u,v> \in p,$ \\
+    \textbf{where} $i = \Tilde{H}_{d,u,p}$
+    
+\end{itemize}
+
+\subsection{Solution}
+$\forall p \in P:$
+\begin{equation}
+    d \text{ s.t. } \Tilde{H}_{d, \lvert q \rvert - \lvert V \rvert, p} = \lvert q \rvert
+\end{equation}
+
+\subsection{Proof of correctness for WF edit distance between two strings}
+    
+Si considerino due \textbf{sequenze} $t_n = t[1]t[2]...t[n]$ e $q_m = q[1]q[2]...q[m]$; la \textbf{distanza di edit} tra qualsiasi coppia di \textbf{prefissi} $t[:j]$, $q[:i]$ è descritta dalla seguente equazione
+
+\begin{equation}
+    D[i,j] = \min \begin{cases}
+        D[i-1,j-1] + \Delta_{i,j} \\
+        D[i-1,j] + 1 \\
+        D[i,j-1] + 1 \\
+    \end{cases}
+\end{equation}
+
+$$\Delta_{i,j} = \begin{cases}
+    0 & \text{if }q[i] = t[j] \\
+    1 & otherwise
+\end{cases}$$
+che è \textbf{equivalente} alle seguenti equazioni
+
+\begin{equation}
+    J[d,k] = \max \begin{cases}
+        H[d-1, k-1] + 1 \\
+        H[d-1, k] + 1 \\
+        H[d-1, k + 1]
+    \end{cases}       
+\end{equation}
+    
+\begin{equation}
+    H[d, k] = i + LCP(t[i - k + 1:], q[i + 1:])
+\end{equation}
+$$i = J[d, k]$$
+$$LCP(q[i:], t[j:]) = \lvert \textit{longest common prefix between } q[i:], t[j:] \rvert$$
+(\textbf{osservazione}: $J[d,k]$ non è strettamente necessaria, ma definita solo per rendere più leggibile l'equazione) 
+\\
+\\
+Dove $H[d, k]$ è il \textbf{maggior offset} sulla \textbf{diagonale} $k = i - j$ per lo \textbf{score} $d$, definito come segue:
+
+\begin{equation}
+    H[d, k] = \begin{cases}
+        max\{i \mid D[i, j] = d\}, & \text{if } \exists i \text{ s.t. } D[i,j] = d \\
+        - \infty, & \text{otherwise}
+    \end{cases}
+\end{equation}
+\textbf{Dimostrazione:} \\
+come conseguenza della definizione (33), vale la seguente implicazione:
+\begin{equation}
+    D[i, i-k] = d \iff H[d,k] \geq i
+\end{equation}
+Si definisca 
+\begin{equation}
+    F[d, k, l] = \begin{cases}
+        \max \{i \mid D[i, j] = d, i \leq l \}, & \text{if } \exists i \text{ s.t. } D[i,j] = d \\
+        - \infty, & \text{otherwise}
+    \end{cases}
+\end{equation}
+come il \textbf{maggior offset} sulla \textbf{diagonale} $k$ per lo \textbf{score} $d$ \emph{vincolato a essere minore o uguale} di $l$; come conseguenza della definizione, valgono le seguenti proposizioni:
+
+\begin{itemize}
+    \item \textbf{Proposizione 1}
+    $$D[i, i-k] = d \iff F[d, k, i] = i$$ 
+    analoga a (34) per $F[d,k,l]$
+    
+    \item \textbf{Proposizione 2}
+    $$F[d, k, l] \leq F[d, k, l + 1]$$
+    
+    \item \textbf{Proposizione 3}
+    $$H[d, k] = \max_l \{ F[d, k, l] \}$$
+    ovvero $H[d, k]$ è il massimo offset contenuto in $F[d,k,l]$ al variare di $l$
+\end{itemize}
+E' quindi possibile riscrivere le equazioni (31) e (32) come
+
+\begin{equation}
+    F[d,k,i] = \begin{cases}
+         F[d,k,i-1] + 1, & \textit{if } t[i-k] = q[i] \\
+         max \begin{cases}
+            F[d-1, k-1, i-1] + 1 \\
+            F[d-1, k, i-1] + 1 \\
+            F[d-1, k+1, i]
+        \end{cases} & \textit{if } t[i-k] \neq q[i]
+    \end{cases}
+\end{equation} \\
+Infatti, in caso di \textbf{mismatch} ($t[j] \neq q[i]$), $F[d,k,i]$ viene computato a partire dagli offset per lo score $d-1$, come succede in (31); invece, in caso di \textbf{match} ($t[j] = q[i]$), $F[d,k,i]$ viene calcolato unicamente dagli offset per lo stesso score $d$; questo continua ad accadere finchè $t[i - k + q] = q[1 + q]$, con $q \in \{0, ..., LCP(t[i - k + 1:], q[i + 1:])$, in maniera analoga a (32).\\ \\
+Per \textbf{ipotesi di induzione} siano noti
+\begin{itemize}
+    \item $F[d, k, i] = i$, il maggior offset sulla diagonale $k$ per lo score $d$ vincolato a essere minore o uguale a $i$
+    
+    \item $D[i, j] = d$, il valore ottimo della distanza di edit tra $q[:i]$ e $t[:j]$
+\end{itemize}
+Sono possibili in tutto 4 casi:
+\begin{itemize}
+    \item \textbf{Match: } $t[j+1] = q[i+1]$ \\
+    In questo caso, il valore della distanza di edit resta invariato 
+    $$D[i+1, j+1] = D[i,j] = d$$
+    e l'offset sulla diagonale $k$ per lo score $d$ aumenta di uno
+    $$F[d, k, i + 1] = F[d, k, i] + 1 = i + 1$$
+    per (33) vale
+    $$F[d,k,i+1] = i + 1 \implies D[i+1, (i+1)-k] = d$$
+    ossia
+    $$D[i+1, (i+1)-k] = D[i+1, (i-k)+1] = D[i+1, j+1] = d$$
+    
+    \item \textbf{Mismatch: } $t[j+1] \neq q[i+1]$ \\ 
+    In questo caso ci sono 3 possibilità:
+
+    \begin{itemize}
+        \item \textbf{Sostituzione}, ovvero si sostituisce $t[j+1]$ con $q[i+1]$, di conseguenza
+        $$D[i+1, j+1] = D[i,j] + 1 = d + 1$$
+        e l'offset sulla diagonale $k$ per lo score $d+1$ aumenta di uno
+        $$F[d+1,k,i+1] = F[d,k,i] + 1 = i + 1$$
+        per (33) vale
+        $$F[d+1,k,i+1] = i + 1 \implies D[i+1, (i+1)-k] = d + 1$$
+        ossia
+        $$D[i+1, (i+1)-k] = D[i+1, (i-k)+1] = D[i+1, j+1] = d + 1$$
+
+        \item \textbf{Inserimento}, ovvero si inserisce $q[i+1]$ dopo $t[:j]$, di conseguenza
+        $$D[i+1,j] = D[i,j] + 1 = d + 1$$
+         e l'offset sulla diagonale $k + 1$ per lo score $d+1$ aumenta di uno
+        $$F[d+1,k+1,i+1] = F[d,k,i] + 1 = i + 1$$
+        per (33) vale
+        $$F[d+1,k+1,i+1] = i + 1 \implies D[i+1, (i+1)-(k+1)] = d + 1$$
+        ossia
+        $$D[i+1, (i+1)-(k+1)] = D[i+1, (i-k)+1-1] = D[i+1, j] = d + 1$$
+
+        \item \textbf{Cancellazione}, ovvero $t[j+1]$ viene cancellato, di conseguenza
+        $$D[i, j+1] = D[i,j] + 1 = d + 1$$
+        e l'offset sulla diagonale $k - 1$ per lo score $d+1$ resta invariato
+        $$F[d+1,k-1,i] = F[d,k,i] = i$$
+        per (33) vale
+        $$F[d+1,k-1,i] = i \implies D[i, i-(k-1)] = d + 1$$
+        ossia
+        $$D[i, (i-k)+1] = D[i, j+1] = d + 1$$
+    \end{itemize}
+\end{itemize}
+
+\begin{figure}
+    \centering
+    \includegraphics[scale=0.5]{WFA_example.jpg}
+    \caption{WFA edit distance between canonical graph and string}
+    \label{fig:Variation_graph_example}
+\end{figure}
+
+\section{Semiglobal alignment extension}
+
+\subsection{Base case}
+\begin{itemize}
+\item Standard alignment:
+    \begin{equation}
+        H_{0, v, p} = 0
+    \end{equation}
+    $$\forall p \in P, \forall v \in p$$
+    
+
+\item WFA:
+    \begin{equation}
+        \Tilde{H}_{0, k, p} = 0
+    \end{equation}
+    $$\forall p \in P,$$ 
+    $$\forall k \in \{-v_t, -v_t + 1, ..., -1, 0\} \text{ s.t. } v_{-k} \in p$$
+    
+\end{itemize}
+
+\subsection{Solution}
+\begin{itemize}
+\item Standard alignment:
+    \begin{equation}
+        min \{ H_{\lvert q \rvert, v, p} \}
+    \end{equation}
+    $$\forall p \in P, \forall v \in p$$
+    
+
+\item WFA:
+    \begin{itemize}
+        \item 
+        \begin{equation}
+            min \{d\} \text{ s.t. } \Tilde{H}_{d, \lvert q \rvert - \lvert V \rvert + j, p} = \lvert q \rvert
+        \end{equation}
+        $$\forall p \in P,$$ 
+        $$\forall j \in \{0, 1, ..., \lvert V \rvert\} \text{ s.t. } v_j \in p$$
+
+        \item 
+        \begin{equation}
+            min \{d\} \text{ s.t. } \Tilde{H}_{d, k, p} = \lvert q \rvert
+        \end{equation}
+        $$\forall p \in P,$$ 
+        $$\forall k \in \{\lvert q \rvert\ - \lvert V \rvert, \lvert q \rvert\ - \lvert V \rvert + 1, ..., \lvert q \rvert \} \text{ s.t. } v_{k + \lvert q \rvert} \in p$$
+    \end{itemize}
+\end{itemize} 
+\end{document}
