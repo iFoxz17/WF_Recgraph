@@ -1,5 +1,5 @@
 # RecGraph
-RecGraph is a sequence-to-graph aligner written in Rust. Differently from most aligners, RecGraph is an exact approach that implements a dynamic programming algorithm for computing an **optimal** alignment between a string and a variation graph. Moreover, RecGraph can allow recombinations in the alignment in a controlled (i.e., non heuristic) way - in other words, it can perform optimal alignment to path not included in the input graphs. This follows directly from the observation that a pangenome graph includes a set of related individuals that are represented as paths of the graph.
+[RecGraph](https://github.com/AlgoLab/RecGraph) is a sequence-to-graph aligner written in Rust. Differently from most aligners, RecGraph is an exact approach that implements a dynamic programming algorithm for computing an **optimal** alignment between a string and a variation graph. Moreover, RecGraph can allow recombinations in the alignment in a controlled (i.e., non heuristic) way - in other words, it can perform optimal alignment to path not included in the input graphs. This follows directly from the observation that a pangenome graph includes a set of related individuals that are represented as paths of the graph.
 
 ## Installation
 Install [`rust`](https://doc.rust-lang.org/cargo/getting-started/installation.html), then clone and install RecGraph:
