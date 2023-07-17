@@ -1,13 +1,14 @@
 # WF_RecGraph
-WF_Recgraph contains an optimizazion of [RecGraph](https://github.com/AlgoLab/RecGraph) for **variation graph** to **sequence alignment**, implementing an a **multithreading** approach based on the ***wavefront*** **algorithm**. 
+WF_Recgraph contains an optimizazion of [RecGraph](https://github.com/AlgoLab/RecGraph) for **variation graph** to **sequence alignment**, implementing an a **multithreading** approach based on the ***wavefront*** **algorithm**.
 
 ## Optimizated complexity
-- $T(n, m, \overline{d}, p) = O(\min\{n, m\} \cdot \overline{d} \cdot p)$
-- $M(n, m, \overline{d}, p) = O(\max\{n, m\} \cdot \overline{d} \cdot p)$
+- $T(n, m, \overline{d}, p) = O(\min{(n, m)} \cdot \overline{d} \cdot p)$
+- $M(n, m, \overline{d}, p) = O(\max{(n, m)} \cdot \overline{d} \cdot p)$
 
 ## Future improvements
-- Extend weighted edit distance to gap pairwise alignment;
-- Reduce memory complexity of ***wf_vec*** implementation to $O(d^2 \cdot p)$  
+- Extend **weighted edit distance** to **gap pairwise alignment**;
+- Reduce memory complexity of ***wf_vec*** implementation to $O(d^2 \cdot p)$;
+- Implements ***wavefront heuristics***.
 
 # RecGraph
 RecGraph is a sequence-to-graph aligner written in Rust. Differently from most aligners, RecGraph is an exact approach that implements a dynamic programming algorithm for computing an **optimal** alignment between a string and a variation graph. Moreover, RecGraph can allow recombinations in the alignment in a controlled (i.e., non heuristic) way - in other words, it can perform optimal alignment to path not included in the input graphs. This follows directly from the observation that a pangenome graph includes a set of related individuals that are represented as paths of the graph.
